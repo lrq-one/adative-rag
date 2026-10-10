@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     )
 
     environment: Literal["local", "test", "staging", "production"] = "local"
-    service_name: str = "ai-agent-template"
+    service_name: str = "scientific-adaptive-rag"
     log_level: str = "INFO"
     cors_allowed_origins: list[str] = [
         "http://localhost:5173",
@@ -31,13 +31,23 @@ class Settings(BaseSettings):
     model_max_retries: int = 2
 
     rag_enabled: bool = True
-    rag_collection_name: str = "agent_knowledge"
+    rag_collection_name: str = "scientific_knowledge"
     rag_top_k: int = 4
     rag_voice_top_k: int = 4
     rag_score_threshold: float | None = None
     rag_chunk_size: int = 1_000
     rag_chunk_overlap: int = 150
     rag_search_multiplier: int = 3
+    rag_retrieval_mode: Literal["adaptive", "hybrid", "dense", "sparse"] = "adaptive"
+    rag_sparse_model_name: str = "Qdrant/bm25"
+    rag_reranker_enabled: bool = False
+    rag_reranker_model: str = "BAAI/bge-reranker-base"
+    rag_evidence_retry_limit: int = 1
+    rag_ocr_enabled: bool = False
+    rag_vlm_enabled: bool = False
+    rag_vlm_model: str = "gpt-4o-mini"
+    rag_parent_chunk_size: int = 2000
+    rag_chunk_strategy: Literal["recursive", "parent_child"] = "parent_child"
     rag_embedding_provider: Literal["fastembed"] = "fastembed"
     rag_embedding_model_name: str = "BAAI/bge-small-en-v1.5"
     rag_embedding_dimensions: int = 384
