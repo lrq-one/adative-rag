@@ -15,10 +15,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --all-extras --dev
+      - run: uv run pytest
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy src tests
-      - run: uv run pytest
 
   frontend:
     runs-on: ubuntu-latest
