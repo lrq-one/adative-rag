@@ -15,7 +15,10 @@ def get_agent_service() -> AgentService:
     model = build_chat_model(settings)
     retriever = get_rag_service() if settings.rag_enabled else EmptyRagRetriever()
     checkpointer = build_checkpointer(settings)
-    graph = build_agent_graph(model, retriever=retriever, checkpointer=checkpointer)
+    graph = build_agent_graph(
+        model, retriever=retriever, checkpointer=checkpointer,
+        max_retries=settings.rag_evidence_retry_limit,
+    )
     return AgentService(graph=graph)
 
 
