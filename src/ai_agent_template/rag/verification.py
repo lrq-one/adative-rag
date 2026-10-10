@@ -33,7 +33,7 @@ def validate_citations(answer: str, sources: list[RagSource]) -> Verification:
     # identifiers. This does not establish mathematical or semantic entailment.
     without_citations = _CITATION.sub("", answer)
     claimed = set(_NUMBER.findall(without_citations))
-    evidence = "\n".join(s.content for s in sources if s.source in citations)
+    evidence = "\n".join(str(s.metadata.get("parent_excerpt") or s.content) for s in sources if s.source in citations)
     reference_numbers = set(_NUMBER.findall(evidence))
     if claimed - reference_numbers:
         return Verification(False, "One or more numeric claims lack source evidence")
