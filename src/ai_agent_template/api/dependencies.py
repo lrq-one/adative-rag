@@ -6,7 +6,7 @@ from ai_agent_template.agent.models import build_chat_model
 from ai_agent_template.agent.service import AgentService
 from ai_agent_template.core.settings import Settings, get_settings
 from ai_agent_template.rag.service import EmptyRagRetriever, RagService
-from ai_agent_template.rag.vectorstore import build_vector_store
+from ai_agent_template.rag.vectorstore import build_retrieval_stores
 
 
 @lru_cache(maxsize=1)
@@ -22,8 +22,16 @@ def get_agent_service() -> AgentService:
 @lru_cache(maxsize=1)
 def get_rag_service() -> RagService:
     settings = get_settings()
-    vector_store = build_vector_store(settings)
-    return RagService(settings=settings, vector_store=vector_store)
+    stores = build_retrieval_stores(settings)
+    reranker = None
+    if settings.rag_reranker_enabled:
+        from ai_agent_template.rag.rerank import CrossEncoderReranker
+
+        reranker = CrossEncoderReranker(model_name=settings.rag_reranker_model)
+    return RagService(
+        settings=settings, vector_store=stores["hybrid"],
+        retrieval_stores=stores, reranker=reranker,
+    )
 
 
 def get_app_settings() -> Settings:
