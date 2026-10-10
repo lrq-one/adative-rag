@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from ai_agent_template.api.dependencies import get_rag_service
-from ai_agent_template.rag.loaders import load_upload_text
+from ai_agent_template.core.settings import get_settings
+from ai_agent_template.rag.loaders import load_upload_documents
 from ai_agent_template.rag.schemas import RagIngestRequest, RagIngestResponse, RagSearchResponse
 from ai_agent_template.rag.service import RagService
 
@@ -30,17 +31,17 @@ async def ingest_file(
     file: Annotated[UploadFile, File(...)],
 ) -> RagIngestResponse:
     try:
-        text = await load_upload_text(file)
+        sections = await load_upload_documents(file, get_settings())
     except UnicodeDecodeError as error:
         raise HTTPException(status_code=400, detail="File must be UTF-8 text or PDF.") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    if not text.strip():
-        raise HTTPException(status_code=400, detail="File did not contain extractable text.")
+    if not sections:
+        raise HTTPException(status_code=400, detail="File did not contain extractable content.")
 
-    return rag_service.ingest_text(
-        text=text,
+    return rag_service.ingest_sections(
+        sections=sections,
         source=file.filename or "upload",
         metadata={"content_type": file.content_type},
     )
@@ -65,17 +66,17 @@ async def ingest_voice_file(
     file: Annotated[UploadFile, File(...)],
 ) -> RagIngestResponse:
     try:
-        text = await load_upload_text(file)
+        sections = await load_upload_documents(file, get_settings())
     except UnicodeDecodeError as error:
         raise HTTPException(status_code=400, detail="File must be UTF-8 text or PDF.") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    if not text.strip():
-        raise HTTPException(status_code=400, detail="File did not contain extractable text.")
+    if not sections:
+        raise HTTPException(status_code=400, detail="File did not contain extractable content.")
 
-    return rag_service.ingest_text(
-        text=text,
+    return rag_service.ingest_sections(
+        sections=sections,
         source=file.filename or "voice-upload",
         document_type="voice_sample",
         metadata={"content_type": file.content_type},
@@ -96,3 +97,9 @@ async def search_voice(
     q: Annotated[str, Query(min_length=1, max_length=2_000)],
 ) -> RagSearchResponse:
     return RagSearchResponse(query=q, sources=rag_service.search_voice(q))
+
+
+@router.delete("/documents/{source}")
+async def delete_document(source: str, rag_service: RagServiceDependency) -> dict[str, int | str]:
+    """Remove all indexed chunks for a source from Qdrant."""
+    return {"source": source, "deleted_chunks": rag_service.delete_source(source)}
