@@ -1,0 +1,5 @@
+Upstream: https://github.com/phantran/ai-agent-template
+Branch: main
+Source commit: 13806d0c60e4b946c8a9f95678ef13605386b9b7
+License: MIT (see root LICENSE)
+Modifications: README, example research notes, evaluation plan, environment defaults, UI copy, scientific answering prompt.
