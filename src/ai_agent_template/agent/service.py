@@ -35,33 +35,40 @@ class AgentService:
         )
 
     async def stream(self, request: AgentInvokeRequest) -> AsyncIterator[dict[str, Any]]:
-        """Yield SSE-friendly events: token deltas, sources, and a final done event."""
+        """Stream source metadata, then the verified final answer.
+
+        Draft model tokens are buffered: an unverified draft must not leak
+        into the client before the evidence gate has run.
+        """
         config = self._config(request.thread_id)
         sources_emitted = False
+        draft_parts: list[str] = []
+        final_text: str | None = None
         with agent_span("agent.stream", thread_id=request.thread_id):
             async for mode, chunk in self._graph.astream(
                 initial_state(request.message),
                 config=config,
                 stream_mode=["updates", "messages"],
             ):
-                if mode == "updates":
+                if mode == "updates" and isinstance(chunk, dict):
                     sources = _extract_sources(chunk)
                     if sources and not sources_emitted:
                         sources_emitted = True
-                        yield {
-                            "type": "sources",
-                            "sources": [s.model_dump() for s in sources],
-                        }
+                        yield {"type": "sources", "sources": [s.model_dump() for s in sources]}
+                    for node in ("verify", "refuse"):
+                        update = chunk.get(node, {})
+                        if isinstance(update, dict) and update.get("messages"):
+                            final_text = str(update["messages"][-1].content)
                 elif mode == "messages":
                     message_chunk, metadata = chunk
                     if isinstance(message_chunk, AIMessageChunk):
                         text = str(message_chunk.content)
                         if text:
-                            yield {
-                                "type": "delta",
-                                "text": text,
-                                "node": metadata.get("langgraph_node") if metadata else None,
-                            }
+                            draft_parts.append(text)
+        answer = final_text if final_text is not None else "".join(draft_parts)
+        if answer:
+            for start in range(0, len(answer), 256):
+                yield {"type": "delta", "text": answer[start : start + 256]}
         yield {"type": "done", "thread_id": request.thread_id}
 
     @staticmethod
