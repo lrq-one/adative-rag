@@ -20,12 +20,14 @@ import { Button } from "@/components/ui/button";
 import { MarkdownMessage } from "@/components/markdown-message";
 import {
   API_BASE_URL,
+  openOriginal,
   getReadiness,
   ingestFile,
   ingestText,
   searchRag,
   streamAgent,
   type RagSource,
+  type CitationRecord,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +36,8 @@ type Message = {
   role: "user" | "agent";
   content: string;
   sources?: RagSource[];
+  citations?: CitationRecord[];
+  verificationLevel?: string;
 };
 
 const examples = [
@@ -49,13 +53,14 @@ function createId() {
 
 export default function App() {
   const queryClient = useQueryClient();
-  const [threadId, setThreadId] = useState("demo-thread");
+  const [threadId, setThreadId] = useState<string>(createId);
   const [streaming, setStreaming] = useState(false);
   const [draft, setDraft] = useState(examples[0]);
   const [knowledgeSource, setKnowledgeSource] = useState("manual-note");
   const [knowledgeText, setKnowledgeText] = useState("");
   const [documentType, setDocumentType] = useState<"knowledge" | "voice_sample">("knowledge");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeDocuments, setActiveDocuments] = useState("");
   const [searchResults, setSearchResults] = useState<RagSource[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -72,7 +77,7 @@ export default function App() {
     retry: false,
   });
 
-  const runStream = async (input: { message: string; thread_id?: string }) => {
+  const runStream = async (input: { message: string; thread_id?: string; active_doc_ids?: string[] }) => {
     const responseId = createId();
     setStreaming(true);
     setMessages((current) => [...current, { id: responseId, role: "agent", content: "" }]);
@@ -92,6 +97,10 @@ export default function App() {
               message.id === responseId ? { ...message, sources: event.sources } : message,
             ),
           );
+        } else if (event.type === "done") {
+          setMessages((current) => current.map((message) => message.id === responseId
+            ? { ...message, citations: event.citations, verificationLevel: event.verification?.level }
+            : message));
         }
       }
     } catch (error) {
@@ -165,7 +174,9 @@ export default function App() {
 
     setMessages((current) => [...current, { id: createId(), role: "user", content: message }]);
     setDraft("");
-    void runStream({ message, thread_id: threadId || undefined });
+    void runStream({ message, thread_id: threadId || undefined,
+      active_doc_ids: activeDocuments.split(/[,，]/).map((source) => source.trim()).filter(Boolean),
+    });
   }
 
   async function copyTranscript() {
@@ -236,11 +247,30 @@ export default function App() {
                   >
                     {message.role === "agent" ? (
                       <div className="markdown-message">
-                        <MarkdownMessage content={message.content} />
+                        <MarkdownMessage content={message.content.replace(/\[(E\d+)\]/g, (label, id: string) =>
+                          message.citations?.some((citation) => citation.citation_id === id)
+                            ? label + "(#" + message.id + "-" + id + ")" : label)} />
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap break-words">{message.content}</p>
                     )}
+                    {message.citations?.length ? (
+                      <div className="mt-3 space-y-2 border-t border-zinc-200 pt-3">
+                        <p className="text-xs text-zinc-500">证据定位 · {message.verificationLevel === "semantic" ? "事实支持校验" : message.verificationLevel === "off" ? "校验已关闭" : "引用与数值校验"}</p>
+                        {message.citations.map((citation) => (
+                          <details key={citation.citation_id} id={message.id + "-" + citation.citation_id} className="scroll-mt-8 rounded border border-zinc-200 p-2 text-xs">
+                            <summary className="cursor-pointer font-medium">
+                              [{citation.citation_id}] {citation.evidence.source_filename} · v{citation.evidence.document_version}
+                              {citation.evidence.page_number ? " · 第 " + citation.evidence.page_number + " 页" : ""}
+                              {citation.evidence.section_title ? " · " + citation.evidence.section_title : ""}
+                            </summary>
+                            <p className="mt-2 whitespace-pre-wrap leading-5">{citation.evidence.text}</p>
+                            <p className="mt-2 text-zinc-500">证据 ID：{citation.evidence.evidence_id}</p>
+                            <button type="button" className="mt-2 text-blue-700 underline" onClick={() => { void openOriginal(citation).catch((error: Error) => toast.error(error.message)); }}>查看该版本原文{citation.evidence.page_number ? ` · 第 ${citation.evidence.page_number} 页` : ""}</button>
+                          </details>
+                        ))}
+                      </div>
+                    ) : null}
                     {message.sources?.length ? (
                       <div className="mt-3 border-t border-zinc-200 pt-3">
                         <p className="text-xs font-semibold uppercase text-zinc-500">Sources</p>
@@ -337,6 +367,13 @@ export default function App() {
               Knowledge
             </div>
             <div className="mt-4 space-y-3">
+              <input
+                value={activeDocuments}
+                onChange={(event) => setActiveDocuments(event.target.value)}
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-400"
+                placeholder="文档范围：文件名，逗号分隔；留空检索全部"
+                aria-label="问答文档范围"
+              />
               <input
                 value={knowledgeSource}
                 onChange={(event) => setKnowledgeSource(event.target.value)}

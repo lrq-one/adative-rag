@@ -1,8 +1,9 @@
+import asyncio
 from collections.abc import AsyncIterator
 from typing import Any
 
 import pytest
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessage
 
 from ai_agent_template.agent.service import AgentService
 from ai_agent_template.api.schemas import AgentInvokeRequest
@@ -17,7 +18,7 @@ class FakeGraph:
         **kwargs: Any,
     ) -> dict[str, Any]:
         assert input["messages"][0].content == "hello"
-        assert config == {"configurable": {"thread_id": "thread-1"}}
+        assert config == {"configurable": {"thread_id": "thread-1"}, "recursion_limit": 50}
         return {"messages": [*input["messages"], AIMessage(content="world")], "sources": []}
 
     async def astream(
@@ -26,12 +27,17 @@ class FakeGraph:
         config: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
-        yield (
-            "updates",
-            {"retrieve": {"sources": [RagSource(source="kb", content="x")]}},
-        )
-        yield ("messages", (AIMessageChunk(content="hello "), {"langgraph_node": "agent"}))
-        yield ("messages", (AIMessageChunk(content="world"), {"langgraph_node": "agent"}))
+        assert kwargs["stream_mode"] == "updates"
+        yield {"plan": {"queries": ["private planner output"]}}
+        yield {"answer": {"messages": [AIMessage(content="unverified draft")]}}
+        yield {
+            "verify": {
+                "final_answer": "hello world",
+                "answer_sources": [RagSource(source="kb", content="x")],
+                "stop_reason": "answered",
+                "attempts": 1,
+            }
+        }
 
 
 @pytest.mark.asyncio
@@ -56,3 +62,27 @@ async def test_agent_service_streams_deltas_and_sources() -> None:
     assert events[0]["sources"][0]["source"] == "kb"
     assert "delta" in types
     assert types[-1] == "done"
+    assert "".join(event["text"] for event in events if event["type"] == "delta") == "hello world"
+    assert events[-1]["retrieval_rounds"] == 1
+
+
+@pytest.mark.asyncio
+async def test_same_thread_requests_are_serialized() -> None:
+    class ConcurrentGraph:
+        active = 0
+        max_active = 0
+
+        async def ainvoke(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+            await asyncio.sleep(0)
+            self.active -= 1
+            return {"final_answer": "done", "sources": []}
+
+    graph = ConcurrentGraph()
+    service = AgentService(graph)
+    await asyncio.gather(
+        service.invoke(AgentInvokeRequest(message="one", thread_id="same")),
+        service.invoke(AgentInvokeRequest(message="two", thread_id="same")),
+    )
+    assert graph.max_active == 1

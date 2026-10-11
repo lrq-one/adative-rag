@@ -1,7 +1,7 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_prefix="AI_AGENT_",
         extra="ignore",
+        populate_by_name=True,
     )
 
     environment: Literal["local", "test", "staging", "production"] = "local"
@@ -26,11 +27,31 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr | None = Field(default=None, alias="GROQ_API_KEY")
     model_provider: Literal["openai", "groq"] = "groq"
     model_name: str = "llama-3.1-8b-instant"
+    model_base_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "AI_AGENT_MODEL_BASE_URL",
+            "OPENAI_BASE_URL",
+            "OPENAI_API_BASE",
+        ),
+    )
     model_temperature: float = 0
     model_timeout_seconds: float = 30
     model_max_retries: int = 2
+    model_max_tokens: int = Field(default=2048, ge=128, le=8192)
+    query_model_name: str | None = None
+    query_model_max_tokens: int = Field(default=1200, ge=128, le=4096)
+    rag_decision_token_budget: int = Field(default=16000, ge=256, le=100000)
+    rag_max_search_calls: int = Field(default=9, ge=1, le=30)
+    rag_context_max_chars: int = Field(default=12000, ge=1000, le=32000)
+    agent_history_turns: int = Field(default=4, ge=1, le=10)
 
     rag_enabled: bool = True
+    rag_data_path: str = ".rag"
+    rag_namespace: str = "default"
+    rag_verification_level: Literal["off", "deterministic", "semantic"] = "semantic"
+    rag_verifier_model_name: str | None = None
+    rag_answer_repair_limit: int = Field(default=1, ge=0, le=1)
     rag_collection_name: str = "scientific_knowledge"
     rag_top_k: int = 4
     rag_voice_top_k: int = 4
@@ -42,15 +63,17 @@ class Settings(BaseSettings):
     rag_sparse_model_name: str = "Qdrant/bm25"
     rag_reranker_enabled: bool = False
     rag_reranker_model: str = "BAAI/bge-reranker-base"
-    rag_evidence_retry_limit: int = 1
+    rag_evidence_retry_limit: int = Field(default=2, ge=0, le=5)
     rag_ocr_enabled: bool = False
     rag_vlm_enabled: bool = False
     rag_vlm_model: str = "gpt-4o-mini"
     rag_parent_chunk_size: int = 2000
-    rag_chunk_strategy: Literal["recursive", "parent_child"] = "parent_child"
+    rag_chunk_strategy: Literal["recursive", "section", "parent_child"] = "parent_child"
     rag_embedding_provider: Literal["fastembed"] = "fastembed"
     rag_embedding_model_name: str = "BAAI/bge-small-en-v1.5"
     rag_embedding_dimensions: int = 384
+    rag_embedding_model_revision: str = "default"
+    rag_embedding_parameters: dict[str, Any] = Field(default_factory=dict)
     qdrant_url: str | None = None
     qdrant_api_key: SecretStr | None = Field(default=None, alias="QDRANT_API_KEY")
     qdrant_storage_path: str = ".qdrant"

@@ -1,9 +1,49 @@
 export type AgentInvokeRequest = {
   message: string;
   thread_id?: string;
+  active_doc_ids?: string[];
 };
 
-export type AgentInvokeResponse = {
+export type AdaptiveDetails = {
+  answer?: string;
+  citations?: CitationRecord[];
+  verification?: { level: string; supported: boolean; error: string } | null;
+  answer_repairs?: number;
+  query_plan?: {
+    standalone_query: string;
+    intent: "fact_lookup" | "explanation" | "comparison" | "multi_hop";
+    route: "dense" | "sparse" | "hybrid";
+    entities: string[];
+    sub_queries: string[];
+    required_facts: string[];
+    needs_clarification: boolean;
+    clarification_question?: string | null;
+  } | null;
+  retrieval_rounds?: number;
+  search_calls?: number;
+  decision_tokens?: number;
+  stop_reason?: string;
+  verification_reason?: string;
+  missing_facts?: string[];
+};
+
+export type CitationRecord = {
+  citation_id: string;
+  snippet: string;
+  status: string;
+  evidence: {
+    evidence_id: string;
+    document_id: string;
+    document_version: number;
+    source_filename: string;
+    page_number?: number | null;
+    section_title?: string | null;
+    bbox?: number[] | null;
+    text: string;
+  };
+};
+
+export type AgentInvokeResponse = AdaptiveDetails & {
   message: string;
   thread_id?: string;
   sources: RagSource[];
@@ -19,6 +59,9 @@ export type RagSource = {
 export type RagIngestResponse = {
   source: string;
   chunks: number;
+  document_id?: string;
+  document_version?: number;
+  stats?: { update_status: string; vector_reuses: number; embedding_cache_hits: number; embedding_cache_misses: number; total_index_time_ms: number };
 };
 
 export type RagSearchResponse = {
@@ -29,6 +72,22 @@ export type RagSearchResponse = {
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 export const API_KEY = import.meta.env.VITE_API_KEY ?? "";
 
+export async function openOriginal(citation: CitationRecord): Promise<void> {
+  const preview = window.open("about:blank", "_blank");
+  if (!preview) throw new Error("请允许浏览器打开原文窗口。");
+  try {
+    const evidence = citation.evidence;
+    const response = await fetch(`${API_BASE_URL}/v1/rag/document-versions/${encodeURIComponent(evidence.document_id)}/${evidence.document_version}/file`, { headers: authHeaders() });
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    const url = URL.createObjectURL(await response.blob());
+    preview.location.href = url + (evidence.page_number ? `#page=${evidence.page_number}` : "");
+    window.setTimeout(() => URL.revokeObjectURL(url), 300000);
+  } catch (error) {
+    preview.close();
+    throw error;
+  }
+}
+
 function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
   return API_KEY ? { ...extra, "x-api-key": API_KEY } : extra;
 }
@@ -36,7 +95,7 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 export type StreamEvent =
   | { type: "sources"; sources: RagSource[] }
   | { type: "delta"; text: string; node?: string | null }
-  | { type: "done"; thread_id?: string };
+  | (AdaptiveDetails & { type: "done"; thread_id?: string });
 
 async function readErrorMessage(response: Response): Promise<string> {
   const body = await response.text();

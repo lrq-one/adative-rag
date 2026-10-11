@@ -45,7 +45,9 @@ def test_rag_service_ingests_and_searches_chunks() -> None:
     assert response.source == "notes.md"
     assert response.chunks >= 1
     assert sources[0].source == "notes.md"
-    assert sources[0].metadata == {"document_type": "knowledge", "kind": "note"}
+    assert sources[0].metadata["document_type"] == "knowledge"
+    assert sources[0].metadata["kind"] == "note"
+    assert sources[0].evidence and sources[0].evidence.document_version == 1
 
 
 def test_rag_service_separates_voice_samples() -> None:
@@ -74,7 +76,7 @@ def test_rag_ingest_is_idempotent_for_identical_text() -> None:
     second = service.ingest_text(text=text, source="notes", document_type="knowledge")
 
     assert first.chunks == second.chunks
-    assert vector_store.add_calls == 2
+    assert vector_store.add_calls == 1
     assert len(vector_store.documents) == first.chunks  # Upsert, not duplicate.
 
 

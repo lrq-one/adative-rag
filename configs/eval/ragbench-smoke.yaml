@@ -1,0 +1,20 @@
+dataset: ragbench
+subset: covidqa
+split: test
+max_samples: 2
+phase: both
+context_mode: retrieved
+top_k: 10
+candidate_multiplier: 3
+seed: 42
+concurrency: 1
+requests_per_second: 0.5
+judge_model: qwen-plus
+faithfulness: true
+experiments:
+  - name: dense
+    retrieval: dense
+    verification: semantic
+  - name: hybrid
+    retrieval: hybrid
+    verification: semantic

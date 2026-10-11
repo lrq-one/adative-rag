@@ -12,12 +12,19 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        a: ({ className, ...props }) => (
+        a: ({ className, href, ...props }) => (
           <a
             className={cn("font-medium text-blue-700 underline underline-offset-2", className)}
-            target="_blank"
+            target={href?.startsWith("#") ? undefined : "_blank"}
+            href={href}
             rel="noreferrer"
             {...props}
+            onClick={() => {
+              if (href?.startsWith("#")) {
+                const evidence = document.getElementById(href.slice(1));
+                if (evidence instanceof HTMLDetailsElement) evidence.open = true;
+              }
+            }}
           />
         ),
         code: ({ className, children, ...props }) => (

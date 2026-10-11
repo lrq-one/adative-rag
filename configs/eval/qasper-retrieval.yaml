@@ -1,0 +1,13 @@
+dataset: qasper
+subset: default
+split: test
+max_samples: 3
+phase: retrieval
+faithfulness: false
+experiments:
+  - name: dense
+    retrieval: dense
+  - name: sparse
+    retrieval: sparse
+  - name: hybrid
+    retrieval: hybrid

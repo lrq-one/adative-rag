@@ -8,6 +8,8 @@
 .ruff_cache/
 .venv/
 .runtime/
+.rag/
+experiments/runs/
 .qdrant/
 node_modules/
 __pycache__/

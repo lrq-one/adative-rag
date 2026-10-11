@@ -23,7 +23,6 @@ from typing import Any
 
 from langchain_core.messages import AIMessage
 
-from ai_agent_template.agent.graph import build_agent_graph
 from ai_agent_template.agent.service import AgentService
 from ai_agent_template.api.schemas import AgentInvokeRequest
 
@@ -104,13 +103,9 @@ async def _run(service: AgentService, cases: Iterable[EvalCase]) -> int:
 def _build_service(offline: bool) -> AgentService:
     if offline:
         return AgentService(_StubGraph())
-    from ai_agent_template.agent.models import build_chat_model
-    from ai_agent_template.core.settings import get_settings
+    from ai_agent_template.api.dependencies import get_agent_service
 
-    settings = get_settings()
-    model = build_chat_model(settings)
-    graph = build_agent_graph(model)
-    return AgentService(graph=graph)
+    return get_agent_service()
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,9 +1,9 @@
 """Document indexing and adaptive dense/BM25 retrieval service."""
 
-import hashlib
 import re
-import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Literal, Protocol
 
 from langchain_core.documents import Document
@@ -11,26 +11,40 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from ai_agent_template.core.settings import Settings
 from ai_agent_template.observability.tracing import agent_span
-from ai_agent_template.rag.schemas import RagIngestResponse, RagSource
+from ai_agent_template.rag.indexing import VersionedIndexer
+from ai_agent_template.rag.repository import EvidenceRepository, digest
+from ai_agent_template.rag.schemas import EvidenceRecord, IndexStats, RagIngestResponse, RagSource
 
 DocumentType = Literal["knowledge", "voice_sample"]
-_NAMESPACE = uuid.UUID("0d2bd8a4-7f4a-4e8c-9f2c-9b9b7c8a1c11")
+RetrievalMode = Literal["dense", "sparse", "hybrid"]
 
 
 class VectorStore(Protocol):
     def add_documents(self, documents: list[Document], **kwargs: Any) -> Any: ...
     def similarity_search_with_score(
-        self, query: str, k: int = 4
+        self, query: str, k: int = 4, **kwargs: Any
     ) -> list[tuple[Document, float]]: ...
 
 
 class RagRetriever(Protocol):
-    def search(self, query: str) -> list[RagSource]: ...
+    def search(
+        self,
+        query: str,
+        *,
+        mode: RetrievalMode | None = None,
+        source_ids: Sequence[str] | None = None,
+    ) -> list[RagSource]: ...
     def search_voice(self, query: str) -> list[RagSource]: ...
 
 
 class EmptyRagRetriever:
-    def search(self, query: str) -> list[RagSource]:
+    def search(
+        self,
+        query: str,
+        *,
+        mode: RetrievalMode | None = None,
+        source_ids: Sequence[str] | None = None,
+    ) -> list[RagSource]:
         return []
 
     def search_voice(self, query: str) -> list[RagSource]:
@@ -51,23 +65,26 @@ def choose_retrieval_mode(query: str) -> Literal["dense", "sparse", "hybrid"]:
     return "hybrid"
 
 
-def _chunk_id(source: str, document_type: DocumentType, content: str) -> str:
-    digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
-    return str(uuid.uuid5(_NAMESPACE, f"{document_type}:{source}:{digest}"))
-
-
 class RagService:
     def __init__(
         self,
         settings: Settings,
         vector_store: VectorStore,
         reranker: Reranker | None = None,
-        retrieval_stores: dict[str, VectorStore] | None = None,
+        retrieval_stores: Mapping[str, VectorStore] | None = None,
+        repository: EvidenceRepository | None = None,
     ) -> None:
         self._settings = settings
         self._vector_store = vector_store
         self._retrieval_stores = retrieval_stores or {}
         self._reranker = reranker
+        self._temporary_storage = None
+        data_path = settings.rag_data_path
+        if repository is None and not getattr(vector_store, "client", None) and data_path == ".rag":
+            self._temporary_storage = TemporaryDirectory()
+            data_path = self._temporary_storage.name
+        self.repository = repository or EvidenceRepository(Path(data_path) / "manifest.sqlite3")
+        self.indexer = VersionedIndexer(settings, vector_store, self.repository)
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.rag_chunk_size,
             chunk_overlap=settings.rag_chunk_overlap,
@@ -80,12 +97,16 @@ class RagService:
         source: str,
         document_type: DocumentType = "knowledge",
         metadata: dict[str, Any] | None = None,
+        document_id: str | None = None,
+        namespace: str = "default",
     ) -> RagIngestResponse:
-        docs = self._splitter.create_documents(
-            [text],
-            metadatas=[{"source": source, "document_type": document_type, **(metadata or {})}],
+        return self.indexer.ingest(
+            [Document(page_content=text, metadata=metadata or {})],
+            source,
+            document_type,
+            document_id=document_id,
+            namespace=namespace,
         )
-        return self._index(docs, source, document_type)
 
     def ingest_sections(
         self,
@@ -94,28 +115,26 @@ class RagService:
         source: str,
         document_type: DocumentType = "knowledge",
         metadata: dict[str, Any] | None = None,
+        document_id: str | None = None,
+        namespace: str = "default",
+        file_hash: str | None = None,
+        original_file: str | None = None,
+        preprocessing_stats: IndexStats | None = None,
+        parser_version: str = "scientific-parser-v3",
     ) -> RagIngestResponse:
         """Preserve page/section metadata while indexing child retrieval chunks."""
-        docs: list[Document] = []
-        for section in sections:
-            meta = {
-                "source": source,
-                "document_type": document_type,
-                **(metadata or {}),
-                **section.metadata,
-            }
-            if self._settings.rag_chunk_strategy == "parent_child":
-                parent_size = max(self._settings.rag_parent_chunk_size, self._settings.rag_chunk_size)
-                parent_splitter = RecursiveCharacterTextSplitter(chunk_size=parent_size, chunk_overlap=0)
-                for parent in parent_splitter.split_text(section.page_content):
-                    for child in self._splitter.split_text(parent):
-                        docs.append(Document(
-                            page_content=child,
-                            metadata={**meta, "parent_excerpt": parent[:parent_size]},
-                        ))
-            else:
-                docs.extend(self._splitter.create_documents([section.page_content], [meta]))
-        return self._index(docs, source, document_type)
+        return self.indexer.ingest(
+            sections,
+            source,
+            document_type,
+            metadata,
+            document_id=document_id,
+            namespace=namespace,
+            file_hash=file_hash,
+            original_file=original_file,
+            preprocessing_stats=preprocessing_stats,
+            parser_version=parser_version,
+        )
 
     def _existing_ids(self, source: str, document_type: DocumentType) -> set[str] | None:
         store = self._vector_store
@@ -125,12 +144,14 @@ class RagService:
             return None
         from qdrant_client import models
 
-        scoped_filter = models.Filter(must=[
-            models.FieldCondition(key="metadata.source", match=models.MatchValue(value=source)),
-            models.FieldCondition(
-                key="metadata.document_type", match=models.MatchValue(value=document_type)
-            ),
-        ])
+        scoped_filter = models.Filter(
+            must=[
+                models.FieldCondition(key="metadata.source", match=models.MatchValue(value=source)),
+                models.FieldCondition(
+                    key="metadata.document_type", match=models.MatchValue(value=document_type)
+                ),
+            ]
+        )
         existing: set[str] = set()
         offset = None
         while True:
@@ -146,72 +167,158 @@ class RagService:
             if offset is None:
                 return existing
 
-    def _index(
-        self, documents: list[Document], source: str, document_type: DocumentType
-    ) -> RagIngestResponse:
-        if not source.strip():
-            raise ValueError("Source is required")
-        ids = [_chunk_id(source, document_type, doc.page_content + "|" +
-                          str(doc.metadata.get("page", "")) + "|" +
-                          str(doc.metadata.get("section", ""))) for doc in documents]
-        # Avoid duplicate point IDs in one batch while keeping deterministic re-ingest.
-        indexed = dict(zip(ids, documents, strict=True))
-        with agent_span("rag.ingest", source=source, document_type=document_type) as span:
-            old_ids = self._existing_ids(source, document_type)
-            pending_ids = set(indexed) - old_ids if old_ids is not None else set(indexed)
-            if pending_ids:
-                self._vector_store.add_documents(
-                    [doc for pid, doc in indexed.items() if pid in pending_ids],
-                    ids=[pid for pid in indexed if pid in pending_ids],
-                )
-            if old_ids is not None:
-                stale = old_ids - set(indexed)
-                if stale:
-                    from qdrant_client import models
-
-                    self._vector_store.client.delete(
-                        collection_name=self._vector_store.collection_name,
-                        points_selector=models.PointIdsList(points=sorted(stale)),
-                        wait=True,
-                    )
-            span.set_attribute("rag.indexed", len(indexed))
-            span.set_attribute("rag.new_embeddings", len(pending_ids))
-            return RagIngestResponse(source=source, chunks=len(indexed))
-
     def delete_source(self, source: str, document_type: DocumentType = "knowledge") -> int:
+        managed = [
+            item
+            for item in self.repository.snapshot(self._settings.rag_namespace)
+            if (item.source_filename == source or item.document_id == source)
+            and item.document_type == document_type
+        ]
+        if managed:
+            count = 0
+            from qdrant_client import models
+
+            for item in managed:
+                with self.repository.document_lock(item.document_id):
+                    count += self.repository.retire(item.document_id, lock_held=True)
+                    self.indexer.cache.remove_owner(item.document_id)
+                    client = getattr(self._vector_store, "client", None)
+                    if client:
+                        client.delete(
+                            collection_name=getattr(self._vector_store, "collection_name"),
+                            points_selector=models.FilterSelector(
+                                filter=models.Filter(
+                                    must=[
+                                        models.FieldCondition(
+                                            key="metadata.document_id",
+                                            match=models.MatchValue(value=item.document_id),
+                                        )
+                                    ]
+                                )
+                            ),
+                            wait=True,
+                        )
+            return count
         ids = self._existing_ids(source, document_type)
         if ids is None:
             raise RuntimeError("Document deletion requires Qdrant-backed storage")
         if ids:
             from qdrant_client import models
 
-            self._vector_store.client.delete(
-                collection_name=self._vector_store.collection_name,
+            getattr(self._vector_store, "client").delete(
+                collection_name=getattr(self._vector_store, "collection_name"),
                 points_selector=models.PointIdsList(points=sorted(ids)),
                 wait=True,
             )
         return len(ids)
 
-    def search(self, query: str) -> list[RagSource]:
-        return self._search(query=query, k=self._settings.rag_top_k, document_type="knowledge")
+    def search(
+        self,
+        query: str,
+        *,
+        mode: RetrievalMode | None = None,
+        source_ids: Sequence[str] | None = None,
+    ) -> list[RagSource]:
+        return self._search(
+            query=query,
+            k=self._settings.rag_top_k,
+            document_type="knowledge",
+            route=mode,
+            source_ids=source_ids,
+        )
 
     def search_voice(self, query: str) -> list[RagSource]:
         return self._search(
             query=query, k=self._settings.rag_voice_top_k, document_type="voice_sample"
         )
 
-    def _select_store(self, query: str) -> tuple[str, VectorStore]:
+    def _select_store(
+        self,
+        query: str,
+        route: RetrievalMode | None = None,
+    ) -> tuple[str, VectorStore]:
         configured = self._settings.rag_retrieval_mode
-        mode = choose_retrieval_mode(query) if configured == "adaptive" else configured
+        # The graph's semantic plan takes precedence. Direct search retains its offline fallback.
+        mode = route or (choose_retrieval_mode(query) if configured == "adaptive" else configured)
+        if self._retrieval_stores and mode not in self._retrieval_stores:
+            raise ValueError(f"Retrieval mode {mode!r} is not configured")
         return mode, self._retrieval_stores.get(mode, self._vector_store)
 
     def _search(
-        self, *, query: str, k: int, document_type: DocumentType
+        self,
+        *,
+        query: str,
+        k: int,
+        document_type: DocumentType,
+        route: RetrievalMode | None = None,
+        source_ids: Sequence[str] | None = None,
     ) -> list[RagSource]:
         fetch_k = max(k * self._settings.rag_search_multiplier, k)
-        mode, store = self._select_store(query)
+        mode, store = self._select_store(query, route)
+        snapshot = self.repository.snapshot(self._settings.rag_namespace)
+        snapshot = [
+            item
+            for item in snapshot
+            if item.document_type == document_type
+            and (
+                not source_ids
+                or item.document_id in source_ids
+                or item.source_filename in source_ids
+            )
+        ]
+        active_versions = {(item.document_id, item.document_version) for item in snapshot}
+        active_evidence = {
+            (item.document_id, point): evidence
+            for item in snapshot
+            for point, evidence in zip(
+                item.chunk_ids, item.evidence_ids or item.chunk_ids, strict=True
+            )
+        }
+        managed_sources = self.repository.managed_sources()
         with agent_span("rag.search", document_type=document_type, retrieval_mode=mode) as span:
-            results = store.similarity_search_with_score(query, k=fetch_k)
+            search_kwargs: dict[str, Any] = {}
+            if getattr(store, "client", None) is not None:
+                from qdrant_client import models
+
+                conditions: list[models.FieldCondition | models.Filter] = [
+                    models.FieldCondition(
+                        key="metadata.document_type",
+                        match=models.MatchValue(value=document_type),
+                    )
+                ]
+                legacy = models.Filter(
+                    must=[
+                        models.IsEmptyCondition(
+                            is_empty=models.PayloadField(key="metadata.document_id")
+                        )
+                    ],
+                    must_not=[
+                        models.FieldCondition(
+                            key="metadata.source", match=models.MatchAny(any=managed_sources)
+                        )
+                    ]
+                    if managed_sources
+                    else None,
+                )
+                if source_ids:
+                    legacy.must = [
+                        models.IsEmptyCondition(
+                            is_empty=models.PayloadField(key="metadata.document_id")
+                        ),
+                        models.FieldCondition(
+                            key="metadata.source", match=models.MatchAny(any=list(source_ids))
+                        ),
+                    ]
+                allowed = [
+                    legacy,
+                    *(
+                        self.indexer.version_filter(doc, version)
+                        for doc, version in active_versions
+                    ),
+                ]
+                conditions.append(models.Filter(should=allowed))
+                search_kwargs["filter"] = models.Filter(must=conditions)
+            results = store.similarity_search_with_score(query, k=fetch_k, **search_kwargs)
             candidates: list[RagSource] = []
             for document, score in results:
                 metadata = dict(document.metadata)
@@ -224,13 +331,62 @@ class RagService:
                 ):
                     continue
                 source = str(metadata.pop("source", "unknown"))
+                if metadata.get("document_id"):
+                    evidence_id = active_evidence.get(
+                        (
+                            metadata["document_id"],
+                            str(metadata.get("chunk_id") or metadata.get("_id")),
+                        )
+                    )
+                    if not evidence_id:
+                        continue
+                    resolved = self.repository.resolve(evidence_id)
+                    if not resolved:
+                        continue
+                    evidence = resolved[0]
+                    source = evidence.source_filename
+                    metadata = dict(evidence.metadata)
+                    document = Document(page_content=evidence.text, metadata=metadata)
+                else:
+                    if source in managed_sources or (source_ids and source not in source_ids):
+                        continue
+                    legacy_id = str(
+                        metadata.get("_id")
+                        or digest(source + document.page_content + str(metadata))
+                    )
+                    evidence = EvidenceRecord(
+                        evidence_id=legacy_id,
+                        document_id=digest(source),
+                        document_version=0,
+                        chunk_id=legacy_id,
+                        source_filename=source,
+                        page_number=metadata.get("page"),
+                        section_title=metadata.get("section"),
+                        content_type=metadata.get("content_type") or "text",
+                        text=document.page_content,
+                        text_hash=digest(document.page_content),
+                        metadata={**metadata, "parser_status": "legacy_unversioned"},
+                    )
                 candidates.append(
                     RagSource(
-                        source=source, content=document.page_content, score=float(score),
+                        source=source,
+                        content=document.page_content,
+                        score=float(score),
                         metadata=metadata,
+                        evidence=evidence,
                     )
                 )
             if self._reranker and candidates:
                 candidates = self._reranker.rerank(query, candidates)
             span.set_attribute("rag.results", min(k, len(candidates)))
             return candidates[:k]
+
+    def evidence_status(self, record: EvidenceRecord) -> str:
+        if record.document_version == 0:
+            return (
+                "legacy"
+                if record.source_filename not in self.repository.managed_sources()
+                else "unavailable"
+            )
+        resolved = self.repository.resolve(record.evidence_id)
+        return resolved[1] if resolved else "unavailable"

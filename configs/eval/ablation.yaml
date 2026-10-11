@@ -1,0 +1,38 @@
+dataset: ragbench
+subset: covidqa
+split: test
+phase: both
+context_mode: retrieved
+max_samples: 3
+top_k: 10
+candidate_multiplier: 3
+seed: 42
+concurrency: 1
+requests_per_second: 0.5
+judge_model: qwen-plus
+faithfulness: true
+experiments:
+  - name: baseline
+  - name: dense
+    retrieval: dense
+  - name: bm25
+    retrieval: sparse
+  - name: fixed_chunks
+    chunking: recursive
+  - name: section_chunks
+    chunking: section
+  - name: minilm
+    embedding_model: sentence-transformers/all-MiniLM-L6-v2
+    embedding_dimensions: 384
+  - name: reranked
+    reranker: true
+  - name: rule_route
+    route: rule
+  - name: llm_route
+    route: llm
+  - name: feedback
+    feedback: true
+  - name: verification_off
+    verification: "off"
+  - name: deterministic
+    verification: deterministic

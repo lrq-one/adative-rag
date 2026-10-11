@@ -3,6 +3,7 @@
 import pytest
 from langchain_core.messages import AIMessage
 
+from ai_agent_template.agent.decisions import Decision, EvidenceGrade, QueryPlan
 from ai_agent_template.agent.graph import build_agent_graph, initial_state
 from ai_agent_template.evaluation.metrics import evaluate_retrieval
 from ai_agent_template.rag.schemas import RagSource
@@ -25,10 +26,13 @@ def test_citation_verifier_rejects_untraceable_claims() -> None:
 
 
 def test_retrieval_metrics() -> None:
-    result = evaluate_retrieval([
-        {"gold_sources": ["a", "b"], "retrieved_sources": ["x", "a", "c"]},
-        {"gold_sources": ["d"], "retrieved_sources": ["d"]},
-    ], k=3)
+    result = evaluate_retrieval(
+        [
+            {"gold_sources": ["a", "b"], "retrieved_sources": ["x", "a", "c"]},
+            {"gold_sources": ["d"], "retrieved_sources": ["d"]},
+        ],
+        k=3,
+    )
     assert result.evaluated == 2
     assert result.recall_at_k == pytest.approx(0.75)
     assert result.hit_rate_at_k == pytest.approx(1.0)
@@ -41,22 +45,35 @@ class StaticModel:
 
 
 class StaticRetriever:
-    def search(self, query):
+    def search(self, query, **kwargs):
         return [RagSource(source="paper.pdf", content="The MAE was 25.05 seconds")]
 
     def search_voice(self, query):
         return []
 
 
+class StaticPolicy:
+    async def plan(self, question, history, active_doc_ids, previous_sources, **kwargs):
+        return Decision(QueryPlan(standalone_query=question, intent="fact_lookup", route="sparse"))
+
+    async def grade(self, plan, sources, **kwargs):
+        return Decision(EvidenceGrade(sufficient=True, relevant_indices=[0]))
+
+    async def rewrite(self, plan, sources, grade, attempted_queries, **kwargs):
+        return Decision(plan.model_copy(update={"sub_queries": ["Find unknown model evidence"]}))
+
+
 @pytest.mark.asyncio
 async def test_workflow_generates_checked_answer() -> None:
-    graph = build_agent_graph(StaticModel(), retriever=StaticRetriever())
+    graph = build_agent_graph(
+        StaticModel(), retriever=StaticRetriever(), query_policy=StaticPolicy()
+    )
     result = await graph.ainvoke(initial_state("What was the MAE?"))
     assert str(result["messages"][-1].content) == "The MAE was 25.05 [paper.pdf]"
 
 
 class EmptyRetriever:
-    def search(self, query):
+    def search(self, query, **kwargs):
         return []
 
     def search_voice(self, query):
@@ -65,6 +82,8 @@ class EmptyRetriever:
 
 @pytest.mark.asyncio
 async def test_workflow_refuses_when_evidence_missing() -> None:
-    graph = build_agent_graph(StaticModel(), retriever=EmptyRetriever(), max_retries=1)
+    graph = build_agent_graph(
+        StaticModel(), retriever=EmptyRetriever(), max_retries=1, query_policy=StaticPolicy()
+    )
     result = await graph.ainvoke(initial_state("Unknown model?"))
     assert "没有检索到足够证据" in str(result["messages"][-1].content)
