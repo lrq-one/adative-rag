@@ -468,7 +468,7 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-zinc-500">UI</dt>
-                <dd className="font-medium text-zinc-800">5173</dd>
+                <dd className="font-medium text-zinc-800">{window.location.port}</dd>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-zinc-500">Thread</dt>

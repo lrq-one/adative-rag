@@ -7,6 +7,7 @@
 .pytest_cache/
 .ruff_cache/
 .venv/
+.runtime/
 .qdrant/
 node_modules/
 __pycache__/
