@@ -1,39 +1,55 @@
-services:
+﻿services:
   api:
     build: .
-    ports:
-      - "8000:8000"
+    ports: ["127.0.0.1:8000:8000"]
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       AI_AGENT_ENVIRONMENT: local
+      AI_AGENT_COMMERCE_MODE: demo
+      AI_AGENT_COMMERCE_LLM_MODE: ${COMMERCE_LLM_MODE:-offline}
+      AI_AGENT_COMMERCE_DATABASE_URL: postgresql+psycopg://commerce:${COMMERCE_DB_PASSWORD:-demo-only-password}@postgres:5432/commerce
       AI_AGENT_QDRANT_URL: http://qdrant:6333
+      AI_AGENT_RAG_DATA_PATH: /data/.rag
+      AI_AGENT_RAG_OCR_ENABLED: ${COMMERCE_OCR_ENABLED:-true}
+    volumes: ["commerce_data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')"]
-      interval: 30s
+      interval: 20s
       timeout: 5s
-      retries: 3
+      retries: 5
     depends_on:
-      - qdrant
-
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
   frontend:
     build:
       context: ./frontend
       target: development
-    ports:
-      - "5173:5173"
+    ports: ["127.0.0.1:5173:5173"]
     environment:
       VITE_API_BASE_URL: http://127.0.0.1:8000
     depends_on:
-      - api
-
+      api:
+        condition: service_healthy
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: commerce
+      POSTGRES_PASSWORD: ${COMMERCE_DB_PASSWORD:-demo-only-password}
+      POSTGRES_DB: commerce
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U commerce -d commerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   qdrant:
-    image: qdrant/qdrant:v1.15.5
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
+    image: qdrant/qdrant:v1.19.0
+    volumes: ["qdrant_data:/qdrant/storage"]
 volumes:
+  commerce_data:
+  postgres_data:
   qdrant_data:

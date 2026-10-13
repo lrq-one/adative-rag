@@ -150,7 +150,14 @@ async def run_experiments(
         "retrieval_definition": "95% character coverage of annotated units; exact origin spans; best alternative annotation; first-appearance ranking across calls",
         "dependencies": {},
         "application_settings": settings.model_dump(
-            exclude={"openai_api_key", "groq_api_key", "qdrant_api_key", "auth_api_keys"}
+            exclude={
+                "openai_api_key",
+                "groq_api_key",
+                "qdrant_api_key",
+                "auth_api_keys",
+                "commerce_principals",
+                "commerce_database_url",
+            }
         ),
     }
     code_files = sorted(Path(__file__).parents[1].rglob("*.py"))

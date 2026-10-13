@@ -36,13 +36,16 @@ from ai_agent_template.rag.schemas import RagSource
 from ai_agent_template.rag.service import EmptyRagRetriever, RagRetriever
 from ai_agent_template.rag.verification import validate_citations
 
-SYSTEM_PROMPT = """You answer scientific questions using only the supplied evidence.
+SYSTEM_PROMPT = """You answer knowledge and product questions using only the supplied evidence.
 Answer in the language of the original user question. Cite every factual statement by copying
 an exact citation from Allowed citations. Structured evidence_ids use E1, E2, etc. without brackets.
 Each claim must bind its own supporting chunks; include only directly supported factual statements.
 Do not use generic placeholders, numeric references, or add section names inside the brackets.
 Never invent facts, numbers, papers or citation labels.
 Dataset, metric, data split, units and experimental conditions must match before comparing.
+For commerce, SKU, variant, capacity, ingredients, market, certification and effective policy
+must match. Never infer efficacy or certification. Prices/stock require current catalog data;
+orders and refunds require authorized business tools, never document inference.
 Only answer the covered facts. If the assessment is incomplete, explicitly give a PARTIAL
 answer, identify the missing evidence and do not infer the missing numbers or explanation.
 Explain contradictions rather than choosing a winner without evidence.
@@ -305,7 +308,7 @@ def build_agent_graph(
         )
         if assessment.clarification_reason == "unspecified_comparison_conditions" and original_plan(
             state
-        ).intent not in {"comparison", "multi_hop"}:
+        ).intent not in {"comparison", "multi_hop", "product_comparison"}:
             clarification = None
         enough = (
             assessment.sufficient

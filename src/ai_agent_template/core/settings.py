@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Literal
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +14,22 @@ class Settings(BaseSettings):
     )
 
     environment: Literal["local", "test", "staging", "production"] = "local"
-    service_name: str = "scientific-adaptive-rag"
+    service_name: str = "commerce-operations-adaptive-rag"
+    commerce_mode: Literal["demo", "production"] = "demo"
+    commerce_database_url: str = "sqlite:///.commerce/business.sqlite3"
+    commerce_llm_mode: Literal["offline", "live"] = "offline"
+    # Opaque bearer token -> trusted store/customer/role. Never accept these from a client header.
+    commerce_principals: dict[str, dict[str, str]] = Field(default_factory=dict)
+    commerce_embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    commerce_embedding_dimensions: int = 384
+    commerce_seed_demo: bool = True
+    commerce_listing_rules: dict[str, dict[str, int]] = Field(
+        default_factory=lambda: {
+            "amazon:US": {"title_max": 200, "bullets_max": 5},
+            "amazon:DE": {"title_max": 180, "bullets_max": 5},
+            "shopify:US": {"title_max": 255, "bullets_max": 8},
+        }
+    )
     log_level: str = "INFO"
     cors_allowed_origins: list[str] = [
         "http://localhost:5173",
@@ -93,6 +108,24 @@ class Settings(BaseSettings):
     @property
     def is_local(self) -> bool:
         return self.environment == "local"
+
+    @property
+    def commerce_production(self) -> bool:
+        return self.commerce_mode == "production" or self.environment == "production"
+
+    @field_validator("commerce_listing_rules")
+    @classmethod
+    def validate_listing_rules(cls, rules: dict[str, dict[str, int]]) -> dict[str, dict[str, int]]:
+        if any(
+            ":" not in site
+            or set(limits) != {"title_max", "bullets_max"}
+            or any(value <= 0 for value in limits.values())
+            for site, limits in rules.items()
+        ):
+            raise ValueError(
+                "Listing rules need platform:MARKET and positive title_max/bullets_max"
+            )
+        return rules
 
 
 @lru_cache(maxsize=1)

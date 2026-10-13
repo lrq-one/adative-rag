@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 
 type MarkdownMessageProps = {
   content: string;
+  onCitation?: (id: string) => void;
 };
 
-export function MarkdownMessage({ content }: MarkdownMessageProps) {
+export function MarkdownMessage({ content, onCitation }: MarkdownMessageProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -19,7 +20,12 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             href={href}
             rel="noreferrer"
             {...props}
-            onClick={() => {
+            onClick={(event) => {
+              if (href?.startsWith("#citation-") && onCitation) {
+                event.preventDefault();
+                onCitation(href.slice(10));
+                return;
+              }
               if (href?.startsWith("#")) {
                 const evidence = document.getElementById(href.slice(1));
                 if (evidence instanceof HTMLDetailsElement) evidence.open = true;
@@ -63,7 +69,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
         ),
       }}
     >
-      {content}
+      {onCitation ? content.replace(/\[(E\d+)\](?!\()/g, "[$1](#citation-$1)") : content}
     </ReactMarkdown>
   );
 }

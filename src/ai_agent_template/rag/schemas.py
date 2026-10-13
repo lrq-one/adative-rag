@@ -27,6 +27,17 @@ class EvidenceRecord(BaseModel):
     table_id: str | None = None
     text_hash: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+    source_type: str = "document"
+    import_batch_id: list[str] = Field(default_factory=list)
+    report_name: list[str] = Field(default_factory=list)
+    row_ids: list[str] = Field(default_factory=list)
+    time_range: dict[str, str] = Field(default_factory=dict)
+    seller_id: str | None = None
+    marketplace: str | None = None
+    sku: str | None = None
+    metric_definition: str | None = None
+    source_document_id: str | None = None
+    source_version: str | None = None
 
 
 class CitationRecord(BaseModel):

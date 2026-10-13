@@ -1,4 +1,5 @@
-FROM node:24-slim AS dependencies
+ARG NODE_IMAGE=node:24-slim
+FROM ${NODE_IMAGE} AS dependencies
 
 WORKDIR /app
 COPY package.json package-lock.json ./

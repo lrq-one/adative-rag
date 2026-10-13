@@ -19,10 +19,20 @@ from ai_agent_template.rag.cache import PersistentCache
 from ai_agent_template.rag.repository import digest, fingerprint
 from ai_agent_template.rag.schemas import IndexStats
 
-PARSER_VERSION = "scientific-parser-v3"
-VISUAL_PROMPT_VERSION = "visible-scientific-content-v1"
+PARSER_VERSION = "multimodal-parser-v4"
+VISUAL_PROMPT_VERSION = "visible-document-product-content-v2"
 
-SUPPORTED_EXTENSIONS = {".txt", ".md", ".markdown", ".json", ".pdf", ".png", ".jpg", ".jpeg"}
+SUPPORTED_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".markdown",
+    ".json",
+    ".pdf",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".docx",
+}
 
 
 @lru_cache(maxsize=1)
@@ -150,7 +160,7 @@ async def _describe_image(image: bytes, mime: str, settings: Settings) -> str:
             {
                 "type": "text",
                 "text": (
-                    "Describe only visible scientific figure content, labels, units and trends. "
+                    "Transcribe only visible document/product content, labels, ingredients, specifications, units and figures. Do not infer efficacy or certifications. "
                     "Do not invent numeric measurements or conclusions. "
                     "Mention any unreadable elements."
                 ),
@@ -172,6 +182,25 @@ async def _load_upload_documents(
     filename = file.filename or "upload"
     suffix = Path(filename).suffix.lower()
     content = await file.read()
+    if suffix == ".docx":
+        from docx import Document as WordDocument
+
+        word = await asyncio.to_thread(WordDocument, BytesIO(content))
+        text = "\n\n".join(
+            [
+                *(paragraph.text for paragraph in word.paragraphs),
+                *(
+                    " | ".join(cell.text for cell in row.cells)
+                    for table in word.tables
+                    for row in table.rows
+                ),
+            ]
+        )
+        return (
+            [Document(page_content=text, metadata={"content_type": "docx", "section": "Document"})]
+            if text.strip()
+            else []
+        )
     if suffix in {"", ".txt", ".md", ".markdown", ".json"}:
         text = content.decode("utf-8")
         return (
@@ -188,6 +217,7 @@ async def _load_upload_documents(
         pdf = None
         for idx, page in enumerate(reader.pages):
             text = await asyncio.to_thread(_page_text, page, cache, stats)
+            extraction_methods = ["pdf_text"] if text else []
             if (settings.rag_ocr_enabled and not text) or settings.rag_vlm_enabled:
                 try:
                     import fitz
@@ -202,11 +232,13 @@ async def _load_upload_documents(
                     text = await _visual_cached(
                         rendered, "image/png", settings, cache, stats, "ocr"
                     )
+                    extraction_methods.append("ocr")
                 if settings.rag_vlm_enabled:
                     description = await _visual_cached(
                         rendered, "image/png", settings, cache, stats, "vlm"
                     )
                     text = (text + "\n\n[Page visual interpretation]\n" + description).strip()
+                    extraction_methods.append("vlm")
             if text:
                 docs.append(
                     Document(
@@ -215,7 +247,10 @@ async def _load_upload_documents(
                             "page": idx + 1,
                             "content_type": "pdf_page",
                             "bbox": None,
-                            "parser_status": "text_extracted_bbox_unavailable",
+                            "parser_status": "visual_extraction_bbox_unavailable"
+                            if "ocr" in extraction_methods or "vlm" in extraction_methods
+                            else "text_extracted_bbox_unavailable",
+                            "extraction_methods": extraction_methods,
                         },
                     )
                 )

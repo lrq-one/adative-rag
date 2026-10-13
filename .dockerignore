@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+.venv
+.runtime
+.commerce
+.rag
+.qdrant
+experiments/runs
+frontend/node_modules
+frontend/dist
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage

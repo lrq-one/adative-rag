@@ -1,7 +1,7 @@
 [project]
 name = "ai-agent-template"
 version = "0.1.0"
-description = "Opinionated production-grade scaffold for FastAPI, LangChain, and LangGraph AI agents."
+description = "Evidence-driven multimodal Adaptive-RAG operations diagnostics for ecommerce sellers."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -18,6 +18,9 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "sqlalchemy>=2.0.0,<3.0.0",
+  "openpyxl>=3.1.0,<4.0.0",
+  "python-docx>=1.2.0,<2.0.0",
   "filelock>=3.20.0,<4.0.0",
   "fastapi[standard]>=0.136.0,<1.0.0",
   "langchain>=1.2.0,<2.0.0",
@@ -42,6 +45,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+vision = ["pymupdf>=1.25,<2", "pytesseract>=0.3.13,<1", "Pillow>=10,<13"]
 evaluation = [
   "ragas>=0.4.0,<0.5.0",
   "datasets>=4.0.0,<5.0.0",
@@ -55,6 +59,7 @@ redis = ["redis>=5.1.0"]
 
 [dependency-groups]
 dev = [
+  "types-openpyxl>=3.1.0",
   "httpx>=0.28.0,<1.0.0",
   "mypy>=1.20.0,<2.0.0",
   "pre-commit>=4.6.0,<5.0.0",
@@ -65,8 +70,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/ai-agent-template"
-Issues = "https://github.com/your-org/ai-agent-template/issues"
+Homepage = "https://github.com/lrq-one/adative-rag"
+Issues = "https://github.com/lrq-one/adative-rag/issues"
 
 [tool.uv]
 package = true

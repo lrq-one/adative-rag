@@ -1,0 +1,542 @@
+{
+  "products": [
+    {
+      "id": "product-serum",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.293867+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "skincare",
+      "names": {
+        "zh": "补水精华",
+        "en": "Hydrating Serum",
+        "es": "Sérum hidratante"
+      }
+    },
+    {
+      "id": "product-cream",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "skincare",
+      "names": {
+        "zh": "保湿面霜",
+        "en": "Moisturizing Cream",
+        "es": "Crema hidratante"
+      }
+    },
+    {
+      "id": "product-wash",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "skincare",
+      "names": {
+        "zh": "洁面液",
+        "en": "Face Wash",
+        "es": "Limpiador facial"
+      }
+    },
+    {
+      "id": "product-toner",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "skincare",
+      "names": {
+        "zh": "爽肤水",
+        "en": "Facial Toner",
+        "es": "Tónico facial"
+      }
+    },
+    {
+      "id": "product-mask",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "skincare",
+      "names": {
+        "zh": "面膜",
+        "en": "Face Mask",
+        "es": "Mascarilla facial"
+      }
+    },
+    {
+      "id": "product-brush",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "beauty_tools",
+      "names": {
+        "zh": "化妆刷",
+        "en": "Makeup Brush",
+        "es": "Brocha de maquillaje"
+      }
+    },
+    {
+      "id": "product-sponge",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "beauty_tools",
+      "names": {
+        "zh": "美妆海绵",
+        "en": "Makeup Sponge",
+        "es": "Esponja de maquillaje"
+      }
+    },
+    {
+      "id": "product-comb",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "beauty_tools",
+      "names": {
+        "zh": "梳子",
+        "en": "Hair Comb",
+        "es": "Peine"
+      }
+    },
+    {
+      "id": "product-bag",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "accessories",
+      "names": {
+        "zh": "收纳包",
+        "en": "Travel Pouch",
+        "es": "Bolsa de viaje"
+      }
+    },
+    {
+      "id": "product-bottle",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "brand": "Synthetic Demo",
+      "category": "accessories",
+      "names": {
+        "zh": "分装瓶",
+        "en": "Travel Bottle",
+        "es": "Botella de viaje"
+      }
+    }
+  ],
+  "variants": [
+    {
+      "id": "DEMO-SERUM-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.293867+00:00",
+      "synthetic": true,
+      "product_id": "product-serum",
+      "sku": "DEMO-SERUM-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "13",
+      "currency": "USD",
+      "stock": 100,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-SERUM-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-serum",
+      "sku": "DEMO-SERUM-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "16",
+      "currency": "USD",
+      "stock": 100,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-CREAM-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-cream",
+      "sku": "DEMO-CREAM-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "14",
+      "currency": "USD",
+      "stock": 99,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-CREAM-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-cream",
+      "sku": "DEMO-CREAM-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "17",
+      "currency": "USD",
+      "stock": 99,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-WASH-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-wash",
+      "sku": "DEMO-WASH-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "15",
+      "currency": "USD",
+      "stock": 98,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-WASH-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-wash",
+      "sku": "DEMO-WASH-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "18",
+      "currency": "USD",
+      "stock": 98,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-TONER-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-toner",
+      "sku": "DEMO-TONER-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "16",
+      "currency": "USD",
+      "stock": 97,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-TONER-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-toner",
+      "sku": "DEMO-TONER-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "19",
+      "currency": "USD",
+      "stock": 97,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-MASK-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-mask",
+      "sku": "DEMO-MASK-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "17",
+      "currency": "USD",
+      "stock": 96,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-MASK-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-mask",
+      "sku": "DEMO-MASK-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "20",
+      "currency": "USD",
+      "stock": 96,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BRUSH-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-brush",
+      "sku": "DEMO-BRUSH-30",
+      "attributes": {
+        "size": "small",
+        "material": "synthetic fiber"
+      },
+      "barcode": null,
+      "price": "18",
+      "currency": "USD",
+      "stock": 95,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BRUSH-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-brush",
+      "sku": "DEMO-BRUSH-60",
+      "attributes": {
+        "size": "large",
+        "material": "synthetic fiber"
+      },
+      "barcode": null,
+      "price": "21",
+      "currency": "USD",
+      "stock": 95,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-SPONGE-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-sponge",
+      "sku": "DEMO-SPONGE-30",
+      "attributes": {
+        "size": "small",
+        "material": "polymer"
+      },
+      "barcode": null,
+      "price": "19",
+      "currency": "USD",
+      "stock": 94,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-SPONGE-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-sponge",
+      "sku": "DEMO-SPONGE-60",
+      "attributes": {
+        "size": "large",
+        "material": "polymer"
+      },
+      "barcode": null,
+      "price": "22",
+      "currency": "USD",
+      "stock": 94,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-COMB-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-comb",
+      "sku": "DEMO-COMB-30",
+      "attributes": {
+        "size": "small",
+        "material": "polymer"
+      },
+      "barcode": null,
+      "price": "20",
+      "currency": "USD",
+      "stock": 93,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-COMB-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-comb",
+      "sku": "DEMO-COMB-60",
+      "attributes": {
+        "size": "large",
+        "material": "polymer"
+      },
+      "barcode": null,
+      "price": "23",
+      "currency": "USD",
+      "stock": 93,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BAG-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-bag",
+      "sku": "DEMO-BAG-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "21",
+      "currency": "USD",
+      "stock": 92,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BAG-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-bag",
+      "sku": "DEMO-BAG-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "24",
+      "currency": "USD",
+      "stock": 92,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BOTTLE-30",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-bottle",
+      "sku": "DEMO-BOTTLE-30",
+      "attributes": {
+        "capacity": "30 ml"
+      },
+      "barcode": null,
+      "price": "22",
+      "currency": "USD",
+      "stock": 91,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    },
+    {
+      "id": "DEMO-BOTTLE-60",
+      "store_id": "demo-store",
+      "updated_at": "2026-10-12T13:26:25.294389+00:00",
+      "synthetic": true,
+      "product_id": "product-bottle",
+      "sku": "DEMO-BOTTLE-60",
+      "attributes": {
+        "capacity": "60 ml"
+      },
+      "barcode": null,
+      "price": "25",
+      "currency": "USD",
+      "stock": 91,
+      "markets": [
+        "US",
+        "DE",
+        "ES"
+      ]
+    }
+  ]
+}

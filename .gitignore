@@ -9,6 +9,7 @@
 .venv/
 .runtime/
 .rag/
+.commerce/
 experiments/runs/
 .qdrant/
 node_modules/

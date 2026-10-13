@@ -14,9 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: uv sync --all-extras --dev
+      - run: uv sync --locked --all-extras --dev
       - run: uv run pytest
       - run: uv run ruff check --select E4,E7,E9,F .
+      - run: uv run mypy src/ai_agent_template
 
   frontend:
     runs-on: ubuntu-latest

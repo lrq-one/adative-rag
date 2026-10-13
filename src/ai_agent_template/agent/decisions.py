@@ -18,7 +18,42 @@ RetrievalRoute = Literal["dense", "sparse", "hybrid"]
 
 class QueryPlan(BaseModel):
     standalone_query: QueryText
-    intent: Literal["fact_lookup", "explanation", "comparison", "multi_hop"]
+    intent: Literal[
+        "fact_lookup",
+        "explanation",
+        "comparison",
+        "multi_hop",
+        "product_search",
+        "product_comparison",
+        "product_faq",
+        "listing_generation",
+        "order_status",
+        "shipping_policy",
+        "return_refund",
+        "complaint",
+        "general_knowledge",
+        "listing_diagnosis",
+        "returns_analysis",
+        "ads_analysis",
+        "operations_investigation",
+    ]
+    original_query: str = ""
+    seller_id: str | None = None
+    marketplace_id: str | None = None
+    asin: str | None = None
+    product_version: str | None = None
+    report_period: str | None = None
+    business_intent: str | None = None
+    skus: list[QueryText] = Field(default_factory=list, max_length=8)
+    platform: str | None = None
+    market: str | None = None
+    language: str = ""
+    after_sales_reason: (
+        Literal["damaged", "wrong_item", "missing_item", "changed_mind", "late_delivery"] | None
+    ) = None
+    required_tools: list[Literal["catalog", "order", "shipment", "policy", "listing"]] = Field(
+        default_factory=list, max_length=5
+    )
     route: RetrievalRoute
     entities: list[QueryText] = Field(default_factory=list, max_length=12)
     sub_queries: list[QueryText] = Field(default_factory=list, max_length=3)

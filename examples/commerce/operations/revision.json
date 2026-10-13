@@ -1,0 +1,15 @@
+[
+  {
+    "sku": "SKU-A102",
+    "asin": "DEMO000102",
+    "product_id": "product-102",
+    "product_version": "2",
+    "effective_at": "2026-09-01",
+    "report_period": "2026-09",
+    "version": 2,
+    "synthetic": true,
+    "change_type": "packaging",
+    "description": "Synthetic packaging revision: protective insert removed; requires batch validation",
+    "previous_version": "1"
+  }
+]

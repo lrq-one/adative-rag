@@ -1,0 +1,18 @@
+{
+  "fixture_only": true,
+  "listing_mismatch_fields": {
+    "SKU-A102": [
+      "capacity"
+    ]
+  },
+  "ads_high_spend_skus": [
+    "SKU-A102"
+  ],
+  "returns_rates": {
+    "SKU-A102": {
+      "2026-08": 0.02,
+      "2026-09": 0.08
+    }
+  },
+  "causal_label": "not_established"
+}

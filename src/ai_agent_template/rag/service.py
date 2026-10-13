@@ -277,6 +277,8 @@ class RagService:
         managed_sources = self.repository.managed_sources()
         with agent_span("rag.search", document_type=document_type, retrieval_mode=mode) as span:
             search_kwargs: dict[str, Any] = {}
+            if source_ids and getattr(store, "supports_source_ids", False):
+                search_kwargs["source_ids"] = list(source_ids)
             if getattr(store, "client", None) is not None:
                 from qdrant_client import models
 

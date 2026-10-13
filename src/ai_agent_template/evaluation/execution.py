@@ -144,7 +144,14 @@ class ProjectExecutor:
         (directory / "effective_settings.json").write_text(
             json.dumps(
                 self.settings.model_dump(
-                    exclude={"openai_api_key", "groq_api_key", "qdrant_api_key", "auth_api_keys"}
+                    exclude={
+                        "openai_api_key",
+                        "groq_api_key",
+                        "qdrant_api_key",
+                        "auth_api_keys",
+                        "commerce_principals",
+                        "commerce_database_url",
+                    }
                 ),
                 ensure_ascii=False,
                 indent=2,

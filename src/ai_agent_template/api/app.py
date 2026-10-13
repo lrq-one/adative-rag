@@ -1,12 +1,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ai_agent_template.api.errors import register_exception_handlers
 from ai_agent_template.api.middleware import install_middleware
-from ai_agent_template.api.routes import agent, health, rag
+from ai_agent_template.api.routes import agent, commerce, health, operations, rag
 from ai_agent_template.api.security import require_api_key
 from ai_agent_template.core import settings as settings_module
 from ai_agent_template.core.logging import configure_logging
@@ -59,4 +60,26 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["health"])
     app.include_router(agent.router, prefix="/v1/agent", tags=["agent"], dependencies=protected)
     app.include_router(rag.router, prefix="/v1/rag", tags=["rag"], dependencies=protected)
+    app.include_router(commerce.router, prefix="/v1/commerce", tags=["commerce"])
+    app.include_router(operations.router, prefix="/v1/operations", tags=["operations"])
+
+    # Commerce entities use scoped permissions; errors must not reveal other tenants' records.
+    async def not_found_handler(request: Request, error: Exception) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(error)})
+
+    app.add_exception_handler(LookupError, not_found_handler)
+
+    async def commerce_value_handler(request: Request, error: Exception) -> JSONResponse:
+        from ai_agent_template.commerce.errors import CommerceModelUnavailable
+
+        return JSONResponse(
+            status_code=503 if isinstance(error, CommerceModelUnavailable) else 400,
+            content={"detail": str(error)},
+        )
+
+    async def commerce_permission_handler(request: Request, error: Exception) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": str(error)})
+
+    app.add_exception_handler(ValueError, commerce_value_handler)
+    app.add_exception_handler(PermissionError, commerce_permission_handler)
     return app

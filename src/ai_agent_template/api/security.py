@@ -18,6 +18,10 @@ async def require_api_key(
 ) -> None:
     allowed = settings.auth_api_keys
     if not allowed:
+        if settings.environment == "production":
+            raise HTTPException(
+                status_code=401, detail="Production API authentication is not configured"
+            )
         return
     if api_key and api_key in allowed:
         request.state.api_key_id = _api_key_label(api_key)

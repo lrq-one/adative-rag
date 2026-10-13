@@ -1,0 +1,485 @@
+.commerce-shell {
+  display: flex;
+  min-height: 100vh;
+  color: #1d2939;
+  background: #f5f7fa;
+  font-size: 14px;
+}
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  padding: 28px 18px;
+  background: #101f36;
+  color: #e8eef7;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 23px;
+  font-weight: 700;
+}
+.brand span {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: #aac1d8;
+  margin-top: 5px;
+}
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.commerce-shell button {
+  cursor: pointer;
+  border: 1px solid #cdd8e6;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #fff;
+  color: #263b56;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.commerce-shell button:hover {
+  border-color: #3d827f;
+  background: #edf7f5;
+}
+.commerce-shell button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.sidebar nav button {
+  border: 0;
+  background: transparent;
+  color: #b7c8db;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 14px;
+}
+.sidebar nav button.active {
+  background: #244967;
+  color: #fff;
+}
+.identity {
+  margin-top: auto;
+}
+.identity input {
+  width: 100%;
+  margin: 8px 0;
+}
+.identity small {
+  display: block;
+  color: #a8bfd4;
+  line-height: 1.8;
+  margin-top: 14px;
+}
+.commerce-shell main {
+  flex: 1;
+  min-width: 0;
+  max-width: 1500px;
+  padding: 30px 40px;
+}
+.commerce-shell header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  gap: 20px;
+}
+.commerce-shell h1 {
+  font-size: 28px;
+  margin: 3px 0;
+  font-weight: 700;
+}
+.commerce-shell h2 {
+  font-size: 18px;
+  font-weight: 650;
+  margin: 0 0 20px;
+}
+.commerce-shell h3 {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 16px 0 10px;
+}
+.eyebrow {
+  letter-spacing: 2px;
+  color: #62738b;
+  font-size: 10px;
+  margin: 0;
+}
+.status,
+.badge {
+  background: #e5f1ef;
+  color: #256b65;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.notice {
+  padding: 12px 18px;
+  background: #eaf0f7;
+  border-left: 3px solid #7899bb;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+.panel {
+  padding: 26px;
+  background: #fff;
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 3px 12px #132e4910;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+.section-title h2 {
+  margin: 0;
+}
+.commerce-shell input,
+.commerce-shell select,
+.commerce-shell textarea {
+  border: 1px solid #cdd8e6;
+  border-radius: 7px;
+  background: #fff;
+  color: #273a52;
+  padding: 9px 12px;
+  max-width: 100%;
+}
+.commerce-shell label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #62738b;
+}
+.commerce-shell input:focus,
+.commerce-shell textarea:focus {
+  outline: 2px solid #83b5b5;
+  outline-offset: 1px;
+}
+.controls {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.controls input[list] {
+  width: 240px;
+}
+.search {
+  width: 100%;
+  margin-bottom: 16px;
+}
+.table-wrap {
+  overflow-x: auto;
+  max-height: 430px;
+}
+.commerce-shell table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.commerce-shell th {
+  font-size: 12px;
+  color: #718197;
+  background: #f7f9fc;
+  position: sticky;
+  top: 0;
+}
+.commerce-shell th,
+.commerce-shell td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e9edf3;
+  white-space: nowrap;
+}
+.commerce-shell small {
+  display: block;
+  color: #718197;
+  font-size: 11px;
+  margin: 5px 0;
+}
+.file-button {
+  border: 1px dashed #9baec5;
+  padding: 12px;
+  border-radius: 8px;
+}
+.file-button input {
+  border: 0;
+  padding: 0;
+  font-size: 11px;
+  width: 220px;
+}
+.document {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #e9edf3;
+  padding: 14px 0;
+}
+.document div {
+  flex: 1;
+}
+.draft {
+  padding: 22px;
+  border: 1px solid #dfe6ef;
+  border-radius: 9px;
+  background: #fafcfe;
+  line-height: 1.9;
+  margin-top: 22px;
+}
+.draft .badge {
+  display: inline-block;
+}
+.commerce-shell pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.9;
+  padding: 14px;
+  background: #f0f3f7;
+  border-radius: 6px;
+  max-height: 450px;
+  overflow: auto;
+}
+.commerce-shell details {
+  margin: 10px 0;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.metric {
+  padding: 20px;
+  background: #f2f6fa;
+  border-radius: 10px;
+}
+.metric strong {
+  font-size: 28px;
+  color: #1f5564;
+}
+.investigation-question {
+  width: 100%;
+  margin-bottom: 18px;
+}
+.check {
+  flex-direction: row !important;
+  align-items: center;
+}
+.execution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.execution span {
+  background: #e8f3ef;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.finding {
+  border-left: 3px solid #7ea7ab;
+  background: #f6f9fc;
+  padding: 14px;
+  margin: 12px 0;
+}
+.finding p {
+  line-height: 1.8;
+}
+.error {
+  background: #fff0ef;
+  border-color: #cf6657;
+}
+.citation-button {
+  font-size: 10px;
+  margin: 3px;
+  padding: 4px 8px !important;
+}
+.commerce-shell summary {
+  cursor: pointer;
+}
+.commerce-shell ul {
+  padding-left: 24px;
+  list-style: disc;
+}
+.empty {
+  padding: 45px 20px;
+  text-align: center;
+  color: #8190a4;
+}
+.prompt-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.prompt-buttons button {
+  font-size: 11px;
+}
+.messages {
+  min-height: 220px;
+  max-height: 550px;
+  overflow: auto;
+}
+.message {
+  padding: 18px 22px;
+  border-radius: 10px;
+  background: #f3f6fa;
+  margin: 14px 0;
+  line-height: 1.8;
+}
+.message.user {
+  background: #e8f3f0;
+  margin-left: 12%;
+}
+.message.assistant {
+  margin-right: 5%;
+}
+.citation {
+  font-size: 11px;
+  margin: 10px 8px 0 0;
+}
+.chat-input {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  align-items: end;
+}
+.chat-input textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+}
+.chat-input button {
+  flex-shrink: 0;
+  background: #246a67;
+  color: white;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.metric-grid strong {
+  display: block;
+  font-size: 19px;
+}
+.error {
+  color: #ad3333;
+  background: #fff1f0;
+  padding: 12px;
+  margin: 10px 0;
+}
+.busy {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #152b43;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 24px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 30;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #12263899;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.evidence-modal {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  width: 750px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+.commerce-shell footer {
+  color: #8190a4;
+  font-size: 11px;
+  text-align: center;
+  margin: 24px 0;
+}
+@media (max-width: 950px) {
+  .sidebar {
+    width: 190px;
+    padding: 24px 12px;
+  }
+  .brand {
+    font-size: 20px;
+  }
+  .commerce-shell main {
+    padding: 24px 18px;
+  }
+}
+@media (max-width: 650px) {
+  .commerce-shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    padding: 18px;
+    gap: 18px;
+  }
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sidebar nav button {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .identity {
+    display: none;
+  }
+  .commerce-shell main {
+    padding: 20px 12px;
+  }
+  .commerce-shell header {
+    align-items: start;
+    flex-direction: column;
+  }
+  .panel {
+    padding: 18px;
+  }
+  .document {
+    flex-wrap: wrap;
+  }
+  .controls {
+    gap: 10px;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
