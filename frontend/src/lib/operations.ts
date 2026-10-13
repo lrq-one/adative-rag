@@ -22,6 +22,18 @@ export type Source = {
   };
 };
 export type Report = {
+  answer: string;
+  answer_paragraphs: { text: string; kind: string; evidence_ids: string[] }[];
+  answer_mode: "verified_data" | "verified_llm";
+  investigation: {
+    request: {
+      sku: string;
+      marketplace_id: string;
+      start: string;
+      end: string;
+      question: string;
+    };
+  };
   results: Record<string, Data>;
   findings: { kind: string; text: string; evidence_ids: string[] }[];
   evidence: Data[];
@@ -51,9 +63,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   }
   return response.json() as Promise<T>;
 }
-export async function* stream(
-  body: unknown,
-): AsyncGenerator<{
+export async function* stream(body: unknown): AsyncGenerator<{
   type: string;
   node?: string;
   status?: string;

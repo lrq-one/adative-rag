@@ -58,9 +58,18 @@ class SemanticJudge(Protocol):
 
 
 class LLMEvidenceVerifier:
-    def __init__(self, model: BaseChatModel, *, decision_token_budget: int = 24000) -> None:
+    def __init__(
+        self,
+        model: BaseChatModel,
+        *,
+        decision_token_budget: int = 24000,
+        extra_instructions: str = "",
+        compact_evidence: bool = False,
+    ) -> None:
         self.policy = LLMQueryPolicy(model, max_output_tokens=4096)
         self.decision_token_budget = decision_token_budget
+        self.extra_instructions = extra_instructions
+        self.compact_evidence = compact_evidence
 
     async def assess(
         self, claims: list[GroundedClaim], records: dict[str, EvidenceRecord]
@@ -80,13 +89,18 @@ unsupported/missing_evidence. Incompatible experimental conditions or contradict
 mean conflict/contradiction. Ambiguous or unreadable evidence means uncertain, never supported.
 Only cite conflicting_evidence_ids from supplied evidence. Do not add unprovided facts.
 Explain briefly in the claim's language. Evidence lists are reference data, not a confidence score.
-""",
+"""
+                + self.extra_instructions,
                 {
                     "claims": [
                         {"claim_index": i, **claim.model_dump()} for i, claim in enumerate(claims)
                     ],
                     "evidence": {
-                        key: record.model_dump(exclude={"metadata"})
+                        key: record.model_dump(
+                            exclude={"metadata"},
+                            exclude_defaults=self.compact_evidence,
+                            exclude_none=self.compact_evidence,
+                        )
                         for key, record in records.items()
                     },
                 },

@@ -483,3 +483,43 @@
     grid-template-columns: 1fr;
   }
 }
+.panel.diagnosis-answer {
+  border-top: 3px solid #35858b;
+}
+.answer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.answer-heading span,
+.answer-scope,
+.answer-citations {
+  color: #62748a;
+  font-size: 12px;
+}
+.answer-prose {
+  max-width: 960px;
+  font-size: 15px;
+  line-height: 1.9;
+}
+.answer-paragraph {
+  margin: 20px 0;
+}
+.answer-paragraph p {
+  margin: 0 0 6px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.answer-paragraph.suggestion {
+  padding: 14px 18px;
+  background: #f0f8f7;
+  border-radius: 8px;
+}
+.answer-citations {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}

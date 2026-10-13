@@ -261,6 +261,14 @@ def test_http_import_upload_investigate_and_original(system):
     assert report["results"]["ads"]["groups"][0]["metrics"]["ACOS"] == 0.5
     assert report["results"]["listing"]["issues"] and report["document_evidence"]
     assert report["verification"]["metrics_recomputed"]
+    assert "60ml" in report["answer"] and "30ml" in report["answer"]
+    assert "3%" in report["answer"] and "50%" in report["answer"]
+    assert "建议" in report["answer"] and report["answer_mode"] == "verified_data"
+    assert {
+        eid for paragraph in report["answer_paragraphs"] for eid in paragraph["evidence_ids"]
+    } <= {ref["evidence_id"] for ref in report["evidence"]}
+    stored = client.get(f"/v1/operations/investigations/{report['investigation']['id']}")
+    assert stored.status_code == 200 and stored.json()["answer"] == report["answer"]
     first = report["evidence"][0]
     traced = client.get(
         "/v1/operations/rows", params=dict(marketplace_id="US", row_ids=",".join(first["row_ids"]))
@@ -271,6 +279,7 @@ def test_http_import_upload_investigate_and_original(system):
     }
     stream = client.post("/v1/operations/investigations/stream", json=body(asin="demo"))
     assert "event: tool" in stream.text and "event: report" in stream.text
+    assert '"answer_paragraphs"' in stream.text
     doc = upload.json()["document"]
     original = client.get(
         f"/v1/operations/documents/{doc['document_id']}/{doc['document_version']}/file",
@@ -291,6 +300,7 @@ def test_graph_single_module_and_permissions(system):
     response = client.post("/v1/operations/investigations", json=body(modules=["ads"]))
     assert response.status_code == 200, response.text
     assert set(response.json()["results"]) == {"ads"}
+    assert "ACOS" in response.json()["answer"] and "退货" not in response.json()["answer"]
     assert (
         client.post("/v1/operations/investigations", json=body(seller_id="other")).status_code
         == 403
@@ -465,3 +475,107 @@ def test_corrected_report_preserves_original_batch_evidence(repo):
     assert repo.source_rows("seller", "US", [row_id])[0]["spend"] == "200"
     assert repo.source_rows("seller", "US", [row_id], [first["id"]])[0]["spend"] == "100"
     assert repo.source_rows("other", "US", [row_id], [first["id"]]) == []
+
+
+def test_partial_report_still_answers_and_does_not_invent_rates(system):
+    client, engine, _ = system
+    load(engine.repository, "supplier", [supplier()], seller="demo-store")
+    load(
+        engine.repository,
+        "returns",
+        [supplier(attributes=None) | dict(return_date="2026-09-10", units=3, reason="damaged")],
+        seller="demo-store",
+    )
+    response = client.post("/v1/operations/investigations", json=body())
+    assert response.status_code == 200
+    answer = response.json()["answer"]
+    assert "3 件退货" in answer and "销售分母缺失" in answer
+    assert "无法计算有效退货率" in answer and "0%" not in answer
+    assert "没有广告报告" in answer and "尚未检索到" in answer
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "verdict,text",
+    [
+        ("supported", "报表记录了 3 件退货。"),
+        ("unsupported", "包装导致退货。"),
+        ("supported", "报表记录了 999 件退货。"),
+        ("supported", "退货率低于行业平均水平。"),
+    ],
+)
+async def test_answer_rewrite_requires_semantic_and_numeric_support(monkeypatch, verdict, text):
+    from ai_agent_template.agent.decisions import Decision, LLMQueryPolicy
+    from ai_agent_template.commerce.analytics import evidence
+    from ai_agent_template.commerce.interpretation import Interpretation, interpret
+    from ai_agent_template.commerce.operations_models import AnswerParagraph
+    from ai_agent_template.rag.evidence import ClaimAssessment, ClaimAssessments, GroundedClaim
+
+    ref = evidence(request(), [], "退货件数", {"returned_units": 3})
+    claim = GroundedClaim(text=text, evidence_ids=[ref["evidence_id"]])
+
+    async def policy(self, schema, *args, **kwargs):
+        if schema is Interpretation:
+            return Decision(Interpretation(answer=[claim]), tokens=100)
+        return Decision(
+            ClaimAssessments(
+                checks=[
+                    ClaimAssessment(
+                        claim_index=0,
+                        claim=text,
+                        evidence_ids=claim.evidence_ids,
+                        verdict=verdict,
+                        reason="test judgement",
+                    )
+                ]
+            ),
+            tokens=100,
+        )
+
+    monkeypatch.setattr(LLMQueryPolicy, "_call", policy)
+    draft = [AnswerParagraph(text="3 件退货", evidence_ids=claim.evidence_ids)]
+    result = await interpret(object(), "退货怎么样", {}, [ref], 4000, draft)
+    assert bool(result["answer"]) == (
+        verdict == "supported" and "999" not in text and "行业" not in text
+    )
+
+
+@pytest.mark.asyncio
+async def test_verified_answer_cannot_drop_another_module(monkeypatch):
+    from ai_agent_template.agent.decisions import Decision, LLMQueryPolicy
+    from ai_agent_template.commerce.analytics import evidence
+    from ai_agent_template.commerce.interpretation import Interpretation, interpret
+    from ai_agent_template.commerce.operations_models import AnswerParagraph
+    from ai_agent_template.rag.evidence import ClaimAssessment, ClaimAssessments, GroundedClaim
+
+    refs = [
+        evidence(request(), [], "退货", {"returned_units": 3}),
+        evidence(request(), [], "广告", {"spend": 100}),
+    ]
+    claim = GroundedClaim(text="报表有 3 件退货。", evidence_ids=[refs[0]["evidence_id"]])
+
+    async def policy(self, schema, *args, **kwargs):
+        if schema is Interpretation:
+            return Decision(Interpretation(answer=[claim]), tokens=100)
+        return Decision(
+            ClaimAssessments(
+                checks=[
+                    ClaimAssessment(
+                        claim_index=0,
+                        claim=claim.text,
+                        evidence_ids=claim.evidence_ids,
+                        verdict="supported",
+                        reason="correct",
+                    )
+                ]
+            ),
+            tokens=100,
+        )
+
+    monkeypatch.setattr(LLMQueryPolicy, "_call", policy)
+    draft = [
+        AnswerParagraph(text="3 件退货", evidence_ids=[refs[0]["evidence_id"]]),
+        AnswerParagraph(text="广告花费 100", evidence_ids=[refs[1]["evidence_id"]]),
+    ]
+    result = await interpret(object(), "退货和广告", {}, refs, 4000, draft)
+    assert not result["answer"] and not result["verification"]["answer_coverage"]

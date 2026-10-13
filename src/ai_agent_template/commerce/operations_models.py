@@ -206,6 +206,12 @@ class Investigation(BaseModel):
     plan: InvestigationPlan
 
 
+class AnswerParagraph(BaseModel):
+    text: str
+    kind: Literal["fact", "limitation", "suggestion"] = "fact"
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class InvestigationReport(BaseModel):
     investigation: Investigation
     results: dict[str, Any]
@@ -218,4 +224,7 @@ class InvestigationReport(BaseModel):
     elapsed_ms: float
     generation_mode: str
     verification: dict[str, Any]
+    answer: str = ""
+    answer_paragraphs: list[AnswerParagraph] = Field(default_factory=list)
+    answer_mode: Literal["verified_data", "verified_llm"] = "verified_data"
     actions_executed: list[str] = Field(default_factory=list)

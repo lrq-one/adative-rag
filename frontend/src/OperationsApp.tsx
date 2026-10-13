@@ -192,6 +192,17 @@ export default function OperationsApp() {
       }
     }
   }
+  function openEvidence(id: string) {
+    if (!report) return;
+    const ref = report.evidence.find((item) => item.evidence_id === id);
+    if (ref) setEvidence(ref);
+    else {
+      const source = report.document_evidence.find(
+        (item) => item.evidence.evidence_id === id,
+      );
+      if (source) void action(() => original(source, scope));
+    }
+  }
   async function importFile(file: File, document = false) {
     const body = new FormData();
     body.set("file", file);
@@ -442,8 +453,66 @@ export default function OperationsApp() {
             </section>
             {report && (
               <>
+                <section
+                  className="panel diagnosis-answer"
+                  aria-label="诊断答复"
+                >
+                  <div className="answer-heading">
+                    <h2>诊断答复</h2>
+                    <span>
+                      {report.answer_mode === "verified_llm"
+                        ? "千问答复 · 已核验证据"
+                        : "依据已核验数据整理"}
+                    </span>
+                  </div>
+                  <p className="answer-scope">
+                    {report.investigation.request.sku} ·{" "}
+                    {report.investigation.request.marketplace_id} ·{" "}
+                    {report.investigation.request.start} 至{" "}
+                    {report.investigation.request.end}
+                  </p>
+                  <div className="answer-prose">
+                    {(report.answer_paragraphs?.length
+                      ? report.answer_paragraphs
+                      : [
+                          {
+                            text:
+                              report.answer ||
+                              "这份历史报告没有保存自然语言答复，请重新发起诊断。",
+                            kind: "limitation",
+                            evidence_ids: [],
+                          },
+                        ]
+                    ).map((paragraph, index) => (
+                      <div
+                        className={`answer-paragraph ${paragraph.kind}`}
+                        key={index}
+                      >
+                        <p>{paragraph.text}</p>
+                        {paragraph.evidence_ids.length > 0 && (
+                          <div
+                            className="answer-citations"
+                            aria-label="本段依据"
+                          >
+                            <span>依据</span>
+                            {paragraph.evidence_ids.map((id, sourceIndex) => (
+                              <button
+                                className="citation-button"
+                                key={id}
+                                onClick={() => openEvidence(id)}
+                                title={id}
+                              >
+                                证据 {sourceIndex + 1}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
                 <section className="panel">
-                  <h2>调查发现 · {report.elapsed_ms.toFixed(0)} ms</h2>
+                  <h2>证据与详细发现 · {report.elapsed_ms.toFixed(0)} ms</h2>
                   {Object.entries({
                     fact: "已确认事实",
                     correlation: "观察到的相关性",
@@ -461,22 +530,7 @@ export default function OperationsApp() {
                               <button
                                 className="citation-button"
                                 key={id}
-                                onClick={() => {
-                                  const ref = report.evidence.find(
-                                    (item) => item.evidence_id === id,
-                                  );
-                                  if (ref) setEvidence(ref);
-                                  else {
-                                    const source = sources.find(
-                                      (item) =>
-                                        item.evidence.evidence_id === id,
-                                    );
-                                    if (source)
-                                      void action(() =>
-                                        original(source, scope),
-                                      );
-                                  }
-                                }}
+                                onClick={() => openEvidence(id)}
                               >
                                 {id.slice(0, 14)}
                               </button>

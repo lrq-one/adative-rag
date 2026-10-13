@@ -30,6 +30,8 @@ LangGraph：规划 → 参数验证 → 按需 Listing/Returns/Ads/Knowledge →
 
 `POST /documents` 绑定 seller/marketplace/SKU/ASIN/product/version，使用原 Loader → VersionedIndexer → EvidenceRepository，保留原文件、Parent-Child、增量索引及解析缓存。真实检索配置复用多语言 FastEmbed、Qdrant Dense/BM25/Hybrid/RRF 和可选 BGE；断网 Demo 使用真实 BM25 在持久化证据上计算词法相关性，不生成模拟 dense 向量，也不使用 Fake LLM。两种索引路径独立。未建立资料索引时报告资料缺失；OCR/VLM 依赖不可用时明确失败。
 
+报告和 SSE 最终事件同时返回 `answer`、`answer_paragraphs`、`answer_mode`。前端首先展示自然语言诊断答复，再保留证据、建议和各模块明细。确定性模式从重新核算的数据整理规格差异、退货件数/比率、同口径广告数据及处理顺序；缺分母或资料不完整时仍提供部分答复。启用真实模型时，在现有解释调用中生成答复，并逐段核验引用、数值及语义；未覆盖各模块证据、无依据的数值、因果断言或核验不可用时保留完整的数据答复，不将未验证的生成内容显示为结论。`verified_llm` 表示模型答复通过核验，`verified_data` 表示依据已核算结果整理。每段引用可打开报表溯源或文档原文。
+
 原文可通过 `/documents/{id}/{version}/file?marketplace_id=...&sku=...&asin=...` 定位。当前检索仅采用活动且符合所选生效日期/版本的文档；历史原文可查看，但活动新版在所选历史期尚未生效时不会冒充旧版知识，需明确导入/选择相应历史资料。
 
 ## 运行与评测

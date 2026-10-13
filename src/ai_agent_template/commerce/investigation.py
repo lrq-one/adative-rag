@@ -14,10 +14,12 @@ from langgraph.graph.state import CompiledStateGraph
 from ai_agent_template.agent.decisions import LLMQueryPolicy
 from ai_agent_template.agent.models import build_chat_model
 from ai_agent_template.commerce.analytics import OperationsAnalytics
+from ai_agent_template.commerce.answer import grounded_answer
 from ai_agent_template.commerce.errors import CommerceModelUnavailable
 from ai_agent_template.commerce.interpretation import interpret
 from ai_agent_template.commerce.operations_knowledge import OperationsKnowledge
 from ai_agent_template.commerce.operations_models import (
+    AnswerParagraph,
     BusinessEvidence,
     Investigation,
     InvestigationFinding,
@@ -43,6 +45,8 @@ class InvestigationState(TypedDict, total=False):
     evidence: list[dict[str, Any]]
     findings: list[InvestigationFinding]
     semantic_verification: dict[str, Any]
+    answer_paragraphs: list[AnswerParagraph]
+    answer_mode: str
     report: InvestigationReport
 
 
@@ -305,7 +309,11 @@ class InvestigationEngine:
                 "decision_tokens", 0
             )
             failures = dict(state["failed_tools"])
-            if model is not None and state["evidence"]:
+            answer = grounded_answer(state["request"], results, failures)
+            answer_mode = "verified_data"
+            if model is not None and (
+                state["evidence"] or results.get("knowledge", {}).get("sources")
+            ):
                 try:
                     interpretation = await interpret(
                         model,
@@ -313,10 +321,21 @@ class InvestigationEngine:
                         results,
                         state["evidence"],
                         self.commerce.settings.rag_decision_token_budget - tokens,
+                        answer,
                     )
                     findings.extend(interpretation["findings"])
                     semantic = interpretation["verification"]
                     tokens += interpretation["tokens"]
+                    if interpretation["answer"]:
+                        answer = [
+                            *interpretation["answer"],
+                            *(
+                                item
+                                for item in answer
+                                if item.kind != "fact" or not item.evidence_ids
+                            ),
+                        ]
+                        answer_mode = "verified_llm"
                     if "ads" in results:
                         results["ads"]["search_term_findings"] = interpretation["search_terms"]
                     if interpretation["error"]:
@@ -329,6 +348,8 @@ class InvestigationEngine:
                 semantic_verification=semantic,
                 decision_tokens=tokens,
                 failed_tools=failures,
+                answer_paragraphs=answer,
+                answer_mode=answer_mode,
                 execution=[*state["execution"], "CrossSourceAnalysis"],
             )
 
@@ -356,6 +377,9 @@ class InvestigationEngine:
             for finding in state["findings"]:
                 if not finding.evidence_ids or not set(finding.evidence_ids) <= ids:
                     raise ValueError("Untraceable finding rejected")
+            for paragraph in state["answer_paragraphs"]:
+                if not set(paragraph.evidence_ids) <= ids:
+                    raise ValueError("Untraceable answer rejected")
             return dict(execution=[*state["execution"], "ClaimVerification"])
 
         async def report(state: InvestigationState) -> dict[str, Any]:
@@ -367,6 +391,9 @@ class InvestigationEngine:
                 investigation=invocation,
                 results=state["results"],
                 findings=state["findings"],
+                answer="\n\n".join(item.text for item in state["answer_paragraphs"]),
+                answer_paragraphs=state["answer_paragraphs"],
+                answer_mode=state["answer_mode"],
                 evidence=[BusinessEvidence.model_validate(ref) for ref in state["evidence"]],
                 document_evidence=state["results"].get("knowledge", {}).get("sources", []),
                 missing_evidence=[
