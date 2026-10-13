@@ -1,6 +1,7 @@
 .commerce-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   color: #1d2939;
   background: #f5f7fa;
   font-size: 14px;
@@ -8,6 +9,8 @@
 .sidebar {
   width: 240px;
   flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
   padding: 28px 18px;
   background: #101f36;
   color: #e8eef7;
@@ -83,6 +86,9 @@
 .commerce-shell main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   max-width: 1500px;
   padding: 30px 40px;
 }
@@ -501,6 +507,11 @@
 }
 .answer-prose {
   max-width: 960px;
+  max-height: min(52dvh, 520px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding-right: 12px;
   font-size: 15px;
   line-height: 1.9;
 }
@@ -522,4 +533,28 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+.commerce-shell .report-details {
+  margin: 0 0 24px;
+}
+.report-details > summary {
+  font-size: 16px;
+  font-weight: 650;
+}
+.report-details-content,
+.document-evidence-content {
+  max-height: min(60dvh, 640px);
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  overflow-wrap: anywhere;
+}
+.report-details-content {
+  margin-top: 18px;
+  padding-right: 12px;
+}
+@media (max-width: 650px) {
+  .sidebar {
+    max-height: 30dvh;
+  }
 }

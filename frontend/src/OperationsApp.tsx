@@ -471,7 +471,12 @@ export default function OperationsApp() {
                     {report.investigation.request.start} 至{" "}
                     {report.investigation.request.end}
                   </p>
-                  <div className="answer-prose">
+                  <div
+                    className="answer-prose"
+                    role="region"
+                    aria-label="诊断答复内容"
+                    tabIndex={0}
+                  >
                     {(report.answer_paragraphs?.length
                       ? report.answer_paragraphs
                       : [
@@ -511,52 +516,61 @@ export default function OperationsApp() {
                     ))}
                   </div>
                 </section>
-                <section className="panel">
-                  <h2>证据与详细发现 · {report.elapsed_ms.toFixed(0)} ms</h2>
-                  {Object.entries({
-                    fact: "已确认事实",
-                    correlation: "观察到的相关性",
-                    hypothesis: "待验证假设",
-                    suggestion: "人工审核建议",
-                  }).map(([kind, name]) => (
-                    <div key={kind}>
-                      <h3>{name}</h3>
-                      {report.findings
-                        .filter((item) => item.kind === kind)
-                        .map((item, index) => (
-                          <article className="finding" key={index}>
-                            <p>{item.text}</p>
-                            {item.evidence_ids.map((id) => (
-                              <button
-                                className="citation-button"
-                                key={id}
-                                onClick={() => openEvidence(id)}
-                              >
-                                {id.slice(0, 14)}
-                              </button>
-                            ))}
-                          </article>
-                        ))}
-                    </div>
-                  ))}
-                  {report.missing_evidence.map((gap, index) => (
-                    <p className="notice" key={index}>
-                      {gap}
-                    </p>
-                  ))}
-                  <Detail
-                    name="指标和引用核验结果"
-                    value={{
-                      mode: report.generation_mode,
-                      verification: report.verification,
-                    }}
-                  />
-                </section>
-                {Object.entries(report.results)
-                  .filter(([key]) => key !== "knowledge")
-                  .map(([key, data]) => (
-                    <Analysis key={key} name={key} data={data} />
-                  ))}
+                <details className="panel report-details">
+                  <summary>
+                    查看证据、建议与分析明细 · {report.elapsed_ms.toFixed(0)} ms
+                  </summary>
+                  <div
+                    className="report-details-content"
+                    role="region"
+                    aria-label="诊断报告明细"
+                    tabIndex={0}
+                  >
+                    {Object.entries({
+                      fact: "已确认事实",
+                      correlation: "观察到的相关性",
+                      hypothesis: "待验证假设",
+                      suggestion: "人工审核建议",
+                    }).map(([kind, name]) => (
+                      <div key={kind}>
+                        <h3>{name}</h3>
+                        {report.findings
+                          .filter((item) => item.kind === kind)
+                          .map((item, index) => (
+                            <article className="finding" key={index}>
+                              <p>{item.text}</p>
+                              {item.evidence_ids.map((id) => (
+                                <button
+                                  className="citation-button"
+                                  key={id}
+                                  onClick={() => openEvidence(id)}
+                                >
+                                  {id.slice(0, 14)}
+                                </button>
+                              ))}
+                            </article>
+                          ))}
+                      </div>
+                    ))}
+                    {report.missing_evidence.map((gap, index) => (
+                      <p className="notice" key={index}>
+                        {gap}
+                      </p>
+                    ))}
+                    <Detail
+                      name="指标和引用核验结果"
+                      value={{
+                        mode: report.generation_mode,
+                        verification: report.verification,
+                      }}
+                    />
+                    {Object.entries(report.results)
+                      .filter(([key]) => key !== "knowledge")
+                      .map(([key, data]) => (
+                        <Analysis key={key} name={key} data={data} />
+                      ))}
+                  </div>
+                </details>
               </>
             )}
           </>
@@ -658,20 +672,27 @@ export default function OperationsApp() {
         {sources.length > 0 && (
           <section className="panel">
             <h2>文档证据与原文定位</h2>
-            {sources.map((source) => (
-              <details key={source.evidence.evidence_id}>
-                <summary>
-                  {source.source} · v{source.evidence.document_version} · 页{" "}
-                  {source.evidence.page_number ?? "—"}
-                </summary>
-                <p>{source.content}</p>
-                <button
-                  onClick={() => void action(() => original(source, scope))}
-                >
-                  查看原文件
-                </button>
-              </details>
-            ))}
+            <div
+              className="document-evidence-content"
+              role="region"
+              aria-label="文档证据列表"
+              tabIndex={0}
+            >
+              {sources.map((source) => (
+                <details key={source.evidence.evidence_id}>
+                  <summary>
+                    {source.source} · v{source.evidence.document_version} · 页{" "}
+                    {source.evidence.page_number ?? "—"}
+                  </summary>
+                  <p>{source.content}</p>
+                  <button
+                    onClick={() => void action(() => original(source, scope))}
+                  >
+                    查看原文件
+                  </button>
+                </details>
+              ))}
+            </div>
           </section>
         )}
         {busy && <p role="status">正在读取资料或执行分析，请稍候…</p>}

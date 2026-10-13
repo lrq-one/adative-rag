@@ -34,4 +34,6 @@ Docker Compose 的 PostgreSQL 16、Qdrant 1.19、API 和 React 容器已启动�
 
 原 QASPER/RAGBench/RAGAS、Recall/MRR/Faithfulness、增量索引与缓存模块及测试保留；本次未重跑大规模公开基准或引用历史成绩作为新业务成绩。
 
-本次没有连接可操控的浏览器，前端已做构建、HTTP 和 CORS 检查，视觉/交互实测仍需用户查看。未进行真实 VLM 图像模型及 BGE 模型实测；原实现与可选配置保留。原生 Windows 未安装 Tesseract，扫描 PDF OCR 已在 Docker 环境验证。当前工作流使用授权报表导入；不声明真实 Amazon 账户 API 接入或执行平台修改。
+报告滚动修正使用本机 Chrome headless 实测并检查截图：1280×800 桌面和 390×844 手机宽度实际发起诊断，明细默认折叠。将答复扩展至原来的 16 倍并展开明细后，文档高度/宽度仍等于视口；答复高度分别为 416/439px，明细高度为 480/506px，其余内容在对应区域内滚动。前端 lint、类型检查和 build 通过，本机及 Docker 前端已更新。
+
+未进行真实 VLM 图像模型及 BGE 模型实测；原实现与可选配置保留。原生 Windows 未安装 Tesseract，扫描 PDF OCR 已在 Docker 环境验证。当前工作流使用授权报表导入；不声明真实 Amazon 账户 API 接入或执行平台修改。
